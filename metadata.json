@@ -1,0 +1,6 @@
+{
+  "name": "AI Chatbot",
+  "description": "An AI chatbot with OpenRouter and Gemini models, local SQLite storage, dark-mode customizable UI, end-to-end encryption, and offline synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
