@@ -9,6 +9,7 @@ import android.util.Base64
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
+import com.example.data.local.LocalLlmService
 import com.example.data.local.entity.ConversationEntity
 import com.example.data.local.entity.MessageEntity
 import com.example.data.local.entity.ProjectEntity
@@ -72,8 +73,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
   private val chatDao = database.chatDao()
   private val geminiService = GeminiService()
   private val openRouterService = OpenRouterService()
+  private val localLlmService = LocalLlmService(application)
   private val syncManager = CloudSyncManager(chatDao)
-  val repository = ChatRepository(chatDao, geminiService, openRouterService, syncManager)
+  val repository = ChatRepository(chatDao, geminiService, openRouterService, syncManager, localLlmService)
 
   private val _uiState = MutableStateFlow(ChatUiState())
   val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -97,7 +99,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     loadSettingsFromPrefs()
     viewModelScope.launch {
       repository.seedInitialDataIfEmpty(_uiState.value.encryptionPassphrase)
-      // Select the first conversation if available
       conversations.collect { list ->
         if (_uiState.value.currentConversationId == null && list.isNotEmpty()) {
           selectConversation(list.first().id)
@@ -107,14 +108,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   private fun loadSettingsFromPrefs() {
-    val savedKey = prefs.getString("openrouter_key", "") ?: ""
     val savedTheme = prefs.getString("theme_mode", AppThemeMode.OLED_MIDNIGHT.name)
     val savedLang = prefs.getString("app_language", AppLanguage.EN.name)
     val savedPassphrase = prefs.getString("enc_passphrase", "omni_vault_device_master_key_secure_2025") ?: "omni_vault_device_master_key_secure_2025"
     val savedHighContrast = prefs.getBoolean("high_contrast", false)
 
     _uiState.value = _uiState.value.copy(
-      openRouterApiKey = savedKey,
+      openRouterApiKey = "",
       themeMode = try { AppThemeMode.valueOf(savedTheme ?: "") } catch (e: Exception) { AppThemeMode.OLED_MIDNIGHT },
       language = try { AppLanguage.valueOf(savedLang ?: "") } catch (e: Exception) { AppLanguage.EN },
       encryptionPassphrase = savedPassphrase,
@@ -153,8 +153,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
       val activeProject = _uiState.value.activeProjectId
       val id = repository.createConversation(
         title = title,
-        provider = _uiState.value.provider,
-        model = if (_uiState.value.provider == AiProvider.GEMINI) _uiState.value.geminiModel.modelId else _uiState.value.openRouterModel.modelId,
+        provider = AiProvider.GEMINI,
+        model = "local-qwen2.5-0.5b-q4km",
         personaId = _uiState.value.persona.id,
         projectId = activeProject
       )
@@ -192,24 +192,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     viewModelScope.launch {
-      val selectedModelId = if (_uiState.value.provider == AiProvider.GEMINI) {
-        _uiState.value.geminiModel.modelId
-      } else {
-        if (_uiState.value.openRouterCustomModel.isNotBlank()) {
-          _uiState.value.openRouterCustomModel
-        } else {
-          _uiState.value.openRouterModel.modelId
-        }
-      }
-
       repository.sendMessage(
         conversationId = convId,
         content = userText,
         imageBase64 = currentImage,
         passphrase = _uiState.value.encryptionPassphrase,
-        openRouterApiKey = _uiState.value.openRouterApiKey,
-        selectedProvider = _uiState.value.provider,
-        selectedModel = selectedModelId,
+        openRouterApiKey = "",
+        selectedProvider = AiProvider.GEMINI,
+        selectedModel = "local-qwen2.5-0.5b-q4km",
         persona = _uiState.value.persona,
         replyToId = currentReplying?.id,
         replyPreview = currentReplying?.content?.take(48)
@@ -217,7 +207,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
       _uiState.value = _uiState.value.copy(isGenerating = false)
 
-      // Simulate teammate collaboration response if in project workspace
       if (_uiState.value.activeProjectId != null) {
         simulateTeammateCollaboration(convId)
       }
@@ -254,7 +243,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         inputStream?.close()
 
         if (bitmap != null) {
-          // Resize to max 1024 to optimize latency and memory
           val scaledBitmap = scaleBitmap(bitmap, 1024)
           val outputStream = ByteArrayOutputStream()
           scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
@@ -264,10 +252,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
           _uiState.value = _uiState.value.copy(
             attachedImageUri = uri,
             attachedImageBase64 = base64,
-            // Prompt mandate: Analyze images MUST use gemini-3.1-pro-preview!
-            provider = AiProvider.GEMINI,
-            geminiModel = GeminiModel.PRO,
-            statusMessage = "Photo attached. Set model to Gemini 3.1 Pro for deep multimodal analysis."
+            statusMessage = "Photo attached. Say what you want to change or remove from it."
           )
         }
       } catch (e: Exception) {
@@ -299,7 +284,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   fun setProvider(provider: AiProvider) {
-    _uiState.value = _uiState.value.copy(provider = provider)
+    _uiState.value = _uiState.value.copy(provider = AiProvider.GEMINI)
   }
 
   fun setGeminiModel(model: GeminiModel) {
@@ -323,34 +308,24 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   fun saveOpenRouterApiKey(key: String) {
-    prefs.edit().putString("openrouter_key", key).apply()
-    _uiState.value = _uiState.value.copy(openRouterApiKey = key, isOpenRouterKeyValid = null)
-    testOpenRouterKey()
+    // Kept for backwards compatibility with old settings screens. Local AI never reads this key.
+    prefs.edit().remove("openrouter_key").apply()
+    _uiState.value = _uiState.value.copy(openRouterApiKey = "", isOpenRouterKeyValid = null)
   }
 
   fun testOpenRouterKey() {
-    val key = _uiState.value.openRouterApiKey
-    if (key.isBlank()) return
-
-    _uiState.value = _uiState.value.copy(isTestingKey = true)
-    viewModelScope.launch {
-      val isValid = openRouterService.testApiKey(key)
-      _uiState.value = _uiState.value.copy(
-        isTestingKey = false,
-        isOpenRouterKeyValid = isValid,
-        statusMessage = if (isValid) "OpenRouter API Key verified successfully!" else "API key test failed or network unreachable."
-      )
-    }
+    _uiState.value = _uiState.value.copy(
+      isTestingKey = false,
+      isOpenRouterKeyValid = false,
+      statusMessage = "NovaMind now runs chat locally. No API key is required."
+    )
   }
 
   fun setPassphrase(passphrase: String) {
     prefs.edit().putString("enc_passphrase", passphrase).apply()
     _uiState.value = _uiState.value.copy(encryptionPassphrase = passphrase)
-    // Reload messages with new passphrase
     val currentId = _uiState.value.currentConversationId
-    if (currentId != null) {
-      selectConversation(currentId)
-    }
+    if (currentId != null) selectConversation(currentId)
   }
 
   fun setThemeMode(theme: AppThemeMode) {
@@ -383,26 +358,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   fun triggerSyncNow() {
-    viewModelScope.launch {
-      syncManager.performFullSync()
-    }
+    viewModelScope.launch { syncManager.performFullSync() }
   }
 
   fun selectProject(projectId: String?) {
     _uiState.value = _uiState.value.copy(activeProjectId = projectId)
     viewModelScope.launch {
-      val convList = if (projectId != null) {
-        chatDao.getConversationsByProject(projectId)
-      } else {
-        chatDao.getAllConversations()
-      }
-      // If no conversations in this project, create one
+      val convList = if (projectId != null) chatDao.getConversationsByProject(projectId) else chatDao.getAllConversations()
       val first = conversations.value.firstOrNull { if (projectId != null) it.projectId == projectId else true }
-      if (first != null) {
-        selectConversation(first.id)
-      } else {
-        createNewConversation("Project Chat")
-      }
+      if (first != null) selectConversation(first.id) else createNewConversation("Project Chat")
     }
   }
 
