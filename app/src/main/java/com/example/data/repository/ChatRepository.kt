@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.local.LocalLlmService
 import com.example.data.local.dao.ChatDao
 import com.example.data.local.entity.ConversationEntity
 import com.example.data.local.entity.MessageEntity
@@ -22,7 +23,8 @@ class ChatRepository(
   private val chatDao: ChatDao,
   private val geminiService: GeminiService,
   private val openRouterService: OpenRouterService,
-  val syncManager: CloudSyncManager
+  val syncManager: CloudSyncManager,
+  private val localLlmService: LocalLlmService
 ) {
   val conversations: Flow<List<ConversationEntity>> = chatDao.getAllConversations()
   val projects: Flow<List<ProjectEntity>> = chatDao.getAllProjects()
@@ -42,7 +44,7 @@ class ChatRepository(
   suspend fun createConversation(
     title: String,
     provider: AiProvider = AiProvider.GEMINI,
-    model: String = GeminiModel.FLASH.modelId,
+    model: String = "local-qwen2.5-0.5b-q4km",
     personaId: String = PersonaRole.GENERAL.id,
     projectId: String? = null
   ): String = withContext(Dispatchers.IO) {
@@ -78,9 +80,9 @@ class ChatRepository(
     replyToId: String? = null,
     replyPreview: String? = null
   ): Result<String> = withContext(Dispatchers.IO) {
-    val conv = chatDao.getConversationById(conversationId) ?: return@withContext Result.failure(Exception("Conversation not found"))
+    val conv = chatDao.getConversationById(conversationId)
+      ?: return@withContext Result.failure(Exception("Conversation not found"))
 
-    // 1. Save user message locally in SQLite (encrypted)
     val userMsgId = UUID.randomUUID().toString()
     val encryptedUserContent = EncryptionManager.encrypt(content, passphrase)
     val userMsg = MessageEntity(
@@ -98,49 +100,47 @@ class ChatRepository(
     chatDao.insertMessage(userMsg)
     syncManager.queueSyncOperation("MESSAGE", userMsgId, "INSERT", "{\"role\":\"user\"}")
 
-    // Update conversation timestamp
     val updatedConv = conv.copy(
       updatedAt = System.currentTimeMillis(),
       title = if (conv.title == "New Chat" || conv.title.isBlank()) content.take(32) else conv.title
     )
     chatDao.updateConversation(updatedConv)
 
-    // 2. Fetch history for context
+    // Keep enough recent history for a small mobile model. The actual model runs locally.
     val rawHistory = chatDao.getMessagesListForConversation(conversationId)
     val decryptedHistory = rawHistory.map {
       val text = if (it.isEncrypted) EncryptionManager.decrypt(it.content, passphrase) else it.content
-      val role = if (it.role == "assistant" || it.role == "model") "model" else "user"
-      Pair(role, text)
+      val role = if (it.role == "assistant" || it.role == "model") "assistant" else "user"
+      role to text
+    }.takeLast(18)
+
+    val prompt = buildString {
+      decryptedHistory.dropLast(1).forEach { (role, text) ->
+        append(if (role == "assistant") "Assistant: " else "User: ")
+        append(text)
+        append("\n")
+      }
+      append("User: ")
+      append(content)
+      append("\nAssistant:")
     }
 
-    // Determine target model: If image is present, mandate Gemini 3.1 Pro as required by prompt!
-    val effectiveModel = if (imageBase64 != null && selectedProvider == AiProvider.GEMINI) {
-      GeminiModel.PRO.modelId
-    } else {
-      selectedModel
+    val aiResult = try {
+      if (imageBase64 != null) {
+        Result.failure<String>(
+          UnsupportedOperationException(
+            "Local text model cannot inspect images yet. The photo is stored locally; ask a text question or use the image edit command."
+          )
+        )
+      } else {
+        Result.success(localLlmService.generate(prompt, persona.systemPrompt))
+      }
+    } catch (error: Throwable) {
+      Result.failure<String>(error)
     }
 
-    // 3. Query AI (Gemini or OpenRouter)
-    val aiResult: Result<String> = if (selectedProvider == AiProvider.OPENROUTER && openRouterApiKey.isNotBlank()) {
-      openRouterService.chatCompletions(
-        apiKey = openRouterApiKey,
-        model = effectiveModel,
-        history = decryptedHistory,
-        systemPrompt = persona.systemPrompt
-      )
-    } else {
-      // Use Gemini API
-      geminiService.generateContent(
-        model = effectiveModel,
-        history = decryptedHistory,
-        systemInstruction = persona.systemPrompt,
-        imageBase64 = imageBase64
-      )
-    }
-
-    // 4. Save AI Response in SQLite (encrypted)
     val replyText = aiResult.getOrElse { err ->
-      "⚠️ Unable to receive response: ${err.message}\n\nPlease check network or API keys in Settings."
+      "⚠️ ${err.message ?: "Unable to generate a local response."}"
     }
 
     val assistantMsgId = UUID.randomUUID().toString()
@@ -151,12 +151,9 @@ class ChatRepository(
       role = "assistant",
       content = encryptedReply,
       timestamp = System.currentTimeMillis(),
-      modelUsed = effectiveModel,
+      modelUsed = "Qwen2.5 0.5B Instruct Q4_K_M (on-device)",
       isEncrypted = true,
-      authorName = when (selectedProvider) {
-        AiProvider.GEMINI -> "Gemini AI"
-        AiProvider.OPENROUTER -> "OpenRouter ($effectiveModel)"
-      }
+      authorName = "NovaMind Local AI"
     )
     chatDao.insertMessage(assistantMsg)
     syncManager.queueSyncOperation("MESSAGE", assistantMsgId, "INSERT", "{\"role\":\"assistant\"}")
@@ -192,40 +189,38 @@ class ChatRepository(
     val existing = chatDao.getMessagesListForConversation("seed-welcome-chat")
     if (existing.isNotEmpty()) return@withContext
 
-    // Create default project for team collaboration
     val teamProjectId = "project-core-ai"
     chatDao.insertProject(
       ProjectEntity(
         id = teamProjectId,
         name = "Enterprise AI Architecture",
-        description = "Collaborative design workspace for offline-first SQLite sync & secure model orchestration.",
+        description = "On-device AI workspace with local SQLite storage and optional cloud sync.",
         currentUserRole = UserRole.OWNER.name,
-        memberCount = 4,
+        memberCount = 1,
         isEncrypted = true,
-        remoteSyncUrl = "https://neon.tech/cloud/db/v1/sync"
+        remoteSyncUrl = null
       )
     )
 
     chatDao.insertProject(
       ProjectEntity(
         id = "project-mobile-client",
-        name = "Cross-Platform Mobile App",
-        description = "React Native & Android client integration with OpenRouter gateway.",
+        name = "Mobile AI App",
+        description = "Private Android AI client powered by a local GGUF model.",
         currentUserRole = UserRole.ADMIN.name,
-        memberCount = 2,
+        memberCount = 1,
         isEncrypted = true,
-        remoteSyncUrl = "https://supabase.co/rest/v1/sync"
+        remoteSyncUrl = null
       )
     )
 
-    // Create welcome conversation
     val welcomeConvId = "seed-welcome-chat"
     chatDao.insertConversation(
       ConversationEntity(
         id = welcomeConvId,
         title = "Welcome to NovaMind",
         provider = AiProvider.GEMINI.name,
-        model = GeminiModel.FLASH.modelId,
+        model = "local-qwen2.5-0.5b-q4km",
         personaId = PersonaRole.GENERAL.id,
         projectId = teamProjectId,
         isPinned = true
@@ -233,14 +228,12 @@ class ChatRepository(
     )
 
     val introText = "Welcome to NovaMind!\n\n" +
-      "✨ **Key Capabilities**:\n" +
-      "- 🔑 **OpenRouter & Gemini Support**: Use built-in Gemini models (`gemini-3.5-flash`, `gemini-3.1-flash-lite`, and `gemini-3.1-pro-preview`) or connect your OpenRouter API key.\n" +
-      "- 💾 **Local SQLite Storage**: Built on native Room SQLite with offline access.\n" +
-      "- ☁️ **Seamless Cloud Synchronization**: Syncs with Supabase or Neon with conflict-free offline queuing.\n" +
-      "- 🔒 **End-to-End AES-256-GCM Encryption**: All chats and sensitive keys are cryptographically sealed.\n" +
-      "- 📸 **Multimodal Image Understanding**: Tap the camera icon to upload and analyze photos using `gemini-3.1-pro-preview`.\n" +
-      "- 👥 **Team Workspaces & Real-Time Collaboration**: Role management (Owner, Admin, Editor, Viewer) and live team presence.\n" +
-      "- ♿ **Full Accessibility**: High-contrast mode and screen-reader support."
+      "🤖 **Private on-device AI**: Chat runs locally on your phone with a compact Qwen2.5 GGUF model.\n" +
+      "🔐 **No API key**: Gemini and OpenRouter keys are not required for chat.\n" +
+      "💾 **Local SQLite storage**: Conversations stay on the device.\n" +
+      "🎨 **Image generation**: Type a request such as `generate an image of a cyberpunk city`.\n" +
+      "🖼️ **Image editing**: Attach an image and say what you want changed or removed.\n" +
+      "📱 **Mobile-first UI**: Designed for touch screens and phone-sized layouts."
 
     val encryptedIntro = EncryptionManager.encrypt(introText, passphrase)
 
@@ -252,7 +245,7 @@ class ChatRepository(
         content = encryptedIntro,
         timestamp = System.currentTimeMillis() - 60000,
         isEncrypted = true,
-        authorName = "Gemini AI"
+        authorName = "NovaMind Local AI"
       )
     )
   }
