@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>AI Chatbot</title>
+  <meta name="description" content="AI Chatbot with OpenRouter & Gemini, SQLite persistence, and Android app companion">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            },
+            dark: {
+              base: '#0B0F19',
+              card: '#111827',
+              surface: '#1F2937',
+              border: '#374151'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      background-color: #0B0F19;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.95); }
+    }
+    .animate-pulse-fast { animation: pulse-fast 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+  </style>
+</head>
+<body class="bg-dark-base text-gray-100 font-sans h-full h-[100dvh] w-full overflow-hidden flex flex-col antialiased selection:bg-brand-500 selection:text-white fixed inset-0">
+
+  <!-- Mobile Backdrop for Sidebar -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 hidden md:hidden transition-opacity"></div>
+
+  <!-- Main Container -->
+  <div class="flex flex-1 h-full w-full overflow-hidden relative">
+
+    <!-- Sidebar / Drawer -->
+    <aside id="sidebar" class="w-72 lg:w-80 max-w-[85vw] bg-dark-card border-r border-dark-border flex flex-col transition-transform duration-300 z-40 fixed md:static inset-y-0 left-0 -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none h-full">
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+              AI Chatbot
+              <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-brand-500/20 text-brand-400 rounded-full border border-brand-500/30">v1.0</span>
+            </h1>
+            <p class="text-[11px] text-gray-400">OpenRouter & Gemini</p>
+          </div>
+        </div>
+        <button id="closeSidebarBtn" class="md:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-surface" aria-label="Close sidebar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- New Chat Button -->
+      <div class="p-3 pb-2">
+        <button id="newChatBtn" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-500 active:scale-[0.98] text-white rounded-xl font-medium text-xs flex items-center justify-center space-x-2 transition-all shadow-md shadow-brand-600/25">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span>New Conversation</span>
+        </button>
+      </div>
+
+      <!-- Search Bar for Chat History -->
+      <div class="px-3 pb-2">
+        <div class="relative flex items-center">
+          <svg class="w-3.5 h-3.5 absolute left-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input
+            type="text"
+            id="sessionSearchInput"
+            placeholder="Search chats & keywords..."
+            class="w-full bg-dark-surface border border-dark-border focus:border-brand-500 rounded-xl pl-8 pr-7 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none transition shadow-inner"
+            aria-label="Search conversation history"
+          />
+          <button id="clearSearchBtn" class="hidden absolute right-2 text-gray-400 hover:text-white p-1 rounded transition" title="Clear search" aria-label="Clear search">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat History List -->
+      <div class="flex-1 overflow-y-auto px-3 space-y-1">
+        <div class="px-2 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+          <span>Conversations</span>
+          <span id="sessionCountBadge" class="text-[10px] font-mono text-gray-400 normal-case"></span>
+        </div>
+        <div id="sessionList" class="space-y-1" role="list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Team Collaboration Presence -->
+      <div class="p-3 border-t border-dark-border bg-dark-base/50">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-medium text-gray-400">Team Presence</span>
+          <span class="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Sync Active
+          </span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="flex -space-x-1.5 overflow-hidden">
+            <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold ring-2 ring-dark-card" title="Alex (Prompt Eng)">AL</div>
+            <div class="w-6 h-6 rounded-full bg-amber-600 flex items-center justify-center text-[10px] font-bold ring-2 ring-dark-card" title="Sarah (Data Sci)">SA</div>
+            <div class="w-6 h-6 rounded-full bg-rose-600 flex items-center justify-center text-[10px] font-bold ring-2 ring-dark-card" title="Bot Auditor">BA</div>
+          </div>
+          <span class="text-[11px] text-gray-300 font-mono">3 live peers</span>
+        </div>
+      </div>
+
+      <!-- Android Companion Build Section -->
+      <div class="p-3 border-t border-dark-border bg-dark-surface/40">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-medium text-gray-300 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-brand-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.1 12 8.1c-1.8533 0-3.5902.3116-5.1368.8507L4.8409 5.4477a.416.416 0 00-.5676-.1521.416.416 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/>
+            </svg>
+            Native Android Build
+          </span>
+          <span class="text-[10px] text-brand-400 font-mono">23 MB APK</span>
+        </div>
+        <p class="text-[10px] text-gray-400 mb-2">Compiled with Jetpack Compose & SQLite Room</p>
+        <a href="/api/download/apk" download="ai-chatbot-debug.apk" class="w-full py-1.5 px-3 bg-dark-surface hover:bg-dark-border text-brand-400 hover:text-white rounded-lg text-[11px] font-medium flex items-center justify-center space-x-1.5 transition border border-brand-500/20 hover:border-brand-500/50">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>Download Android APK</span>
+        </a>
+      </div>
+
+      <!-- Settings & API Docs Footer -->
+      <div class="p-3 border-t border-dark-border flex items-center justify-between text-xs">
+        <button id="openSettingsBtn" class="flex items-center space-x-1.5 text-gray-400 hover:text-white py-1 px-2 rounded-lg hover:bg-dark-surface transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <span>Settings</span>
+        </button>
+        <button id="openApiDocsBtn" class="flex items-center space-x-1.5 text-gray-400 hover:text-white py-1 px-2 rounded-lg hover:bg-dark-surface transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>API Docs</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="flex-1 flex flex-col min-h-0 h-full w-full overflow-hidden relative bg-dark-base">
+
+      <!-- Top Navbar -->
+      <header class="flex-shrink-0 h-14 border-b border-dark-border bg-dark-card/95 backdrop-blur px-3 sm:px-4 flex items-center justify-between z-10">
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <button id="openSidebarBtn" class="md:hidden p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-surface active:scale-95" aria-label="Open sidebar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
+          <!-- Model Selection Dropdown -->
+          <div class="relative">
+            <button id="modelPickerBtn" class="flex items-center space-x-2 px-2.5 sm:px-3 py-1.5 bg-dark-surface hover:bg-dark-border border border-dark-border rounded-xl text-xs font-medium text-gray-200 transition active:scale-95">
+              <span id="currentModelBadge" class="w-2 h-2 rounded-full bg-brand-400"></span>
+              <span id="currentModelName" class="truncate max-w-[120px] sm:max-w-[170px]">Gemini 3.6 Flash</span>
+              <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <!-- Dropdown Menu -->
+            <div id="modelDropdown" class="hidden absolute left-0 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-dark-card border border-dark-border rounded-xl shadow-2xl py-1 z-50 max-h-[70vh] overflow-y-auto">
+              <div class="px-3 py-1.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Free Built-In Models</span>
+                <span class="text-[9px] bg-emerald-500/20 text-emerald-300 font-mono px-1.5 py-0.5 rounded">No payment needed</span>
+              </div>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="google/gemini-3.6-flash">
+                <div>
+                  <span class="font-medium text-white block">Gemini 3.6 Flash</span>
+                  <span class="text-[10px] text-gray-400">Fast, smart, 100% free server-side</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Free · Default</span>
+              </button>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="google/gemini-3.8-flash">
+                <div>
+                  <span class="font-medium text-gray-200 block">Gemini 3.8 Flash</span>
+                  <span class="text-[10px] text-gray-400">Next-gen multimodal & reasoning</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Free · Latest</span>
+              </button>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="google/gemini-3.1-pro-preview">
+                <div>
+                  <span class="font-medium text-gray-200 block">Gemini 3.1 Pro</span>
+                  <span class="text-[10px] text-gray-400">Complex coding & deep thought</span>
+                </div>
+                <span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">Free · Pro</span>
+              </button>
+
+              <div class="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-t border-dark-border mt-1 flex items-center justify-between">
+                <span>Third-Party Models</span>
+                <span class="text-[9px] text-gray-400 font-mono">Requires OpenRouter</span>
+              </div>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="meta-llama/llama-3.3-70b-instruct:free">
+                <div>
+                  <span class="font-medium text-gray-300 block">Llama 3.3 70B</span>
+                  <span class="text-[10px] text-gray-500">Auto-falls back to free Gemini if no credits</span>
+                </div>
+                <span class="text-[10px] text-amber-400 font-mono">OpenRouter</span>
+              </button>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="mistralai/mistral-7b-instruct:free">
+                <div>
+                  <span class="font-medium text-gray-300 block">Mistral 7B</span>
+                  <span class="text-[10px] text-gray-500">Auto-falls back to free Gemini if no credits</span>
+                </div>
+                <span class="text-[10px] text-amber-400 font-mono">OpenRouter</span>
+              </button>
+              <button class="model-opt w-full px-3 py-2 text-left text-xs hover:bg-dark-surface flex items-center justify-between transition" data-model="deepseek/deepseek-chat">
+                <div>
+                  <span class="font-medium text-gray-300 block">DeepSeek V3</span>
+                  <span class="text-[10px] text-gray-500">Auto-falls back to free Gemini if no credits</span>
+                </div>
+                <span class="text-[10px] text-cyan-400 font-mono">OpenRouter</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Header Items -->
+        <div class="flex items-center space-x-2">
+          <!-- Download Conversation Button -->
+          <button id="downloadChatBtn" class="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 bg-dark-surface hover:bg-dark-border active:scale-95 border border-dark-border rounded-xl text-xs font-medium text-gray-200 hover:text-white transition shadow-sm" title="Download Conversation">
+            <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span class="hidden sm:inline">Download Conversation</span>
+            <span class="sm:hidden">Download</span>
+          </button>
+
+          <!-- Dev Server Live Badge -->
+          <div class="hidden xs:flex items-center space-x-1.5 px-2 sm:px-2.5 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-[10px] sm:text-[11px] text-emerald-300 font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="hidden md:inline">Port 3000 Active</span>
+            <span class="md:hidden">Active</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Message History Viewport: takes all remaining height -->
+      <div id="chatScrollArea" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4" role="log" aria-live="polite">
+        <!-- Messages rendered by JS -->
+      </div>
+
+      <!-- Pinned Chat Input Area: firmly at bottom of screen -->
+      <div id="chatInputContainer" class="flex-shrink-0 w-full p-2.5 sm:p-3 md:p-4 bg-dark-card/95 backdrop-blur border-t border-dark-border z-20 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+        <form id="chatForm" class="max-w-4xl mx-auto flex flex-col space-y-2">
+          <div class="relative flex items-end bg-dark-surface border border-dark-border focus-within:border-brand-500 rounded-2xl p-2 transition shadow-inner">
+            <textarea
+              id="messageInput"
+              rows="1"
+              placeholder="Ask anything... (Enter to send, Shift+Enter for newline)"
+              class="w-full bg-transparent text-sm text-gray-100 placeholder-gray-500 focus:outline-none resize-none px-2 py-1 max-h-36 min-h-[36px]"
+              aria-label="Chat prompt input"
+            ></textarea>
+
+            <button
+              type="submit"
+              id="sendBtn"
+              class="p-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:hover:bg-brand-600 text-white rounded-xl transition shadow-md shadow-brand-600/30 flex-shrink-0 ml-2 active:scale-95"
+              aria-label="Send message"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </div>
+
+          <!-- Quick Action Bar under input -->
+          <div class="flex items-center justify-between px-1 text-[11px] text-gray-400">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+              <span class="hidden sm:flex items-center gap-1">
+                <kbd class="px-1.5 py-0.5 bg-dark-surface border border-dark-border rounded text-[10px]">Enter</kbd> to send
+              </span>
+              <button type="button" id="quickDownloadBtn" class="hover:text-brand-400 transition flex items-center gap-1.5 text-gray-300 hover:text-white" title="Download Conversation">
+                <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Download Conversation</span>
+              </button>
+              <button type="button" id="clearChatBtn" class="hover:text-rose-400 transition flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>Clear</span>
+              </button>
+            </div>
+            <div id="keyStatusBadge" class="flex items-center gap-1.5 text-gray-400 text-[10px] sm:text-[11px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-400"></span>
+              <span id="keyStatusText">Gemini 3.6 Flash</span>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-dark-card border border-dark-border rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <h2 class="font-bold text-base text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Settings & Credentials
+        </h2>
+        <button id="closeSettingsBtn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-dark-surface">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- 100% Free Gemini Notice -->
+      <div class="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            100% Free Gemini Available
+          </span>
+          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-1.5 py-0.5 rounded">No Credit Card</span>
+        </div>
+        <p class="text-[11px] text-gray-300">You do not need to pay anything. Built-in Gemini 3.6 Flash and 3.8 Flash are provided completely free with unlimited access.</p>
+        <button type="button" id="resetToFreeBtn" class="text-[11px] text-brand-400 hover:text-brand-300 underline font-medium pt-0.5 flex items-center gap-1">
+          <span>Switch to Free Gemini & Remove OpenRouter Key</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </button>
+      </div>
+
+      <!-- OpenRouter Key Vault -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-semibold text-gray-300">OpenRouter API Key (Optional)</label>
+          <span class="text-[10px] text-gray-500 font-mono">Leave empty for 100% free Gemini</span>
+        </div>
+        <p class="text-[11px] text-gray-400">Only needed if you specifically want third-party models like Llama or DeepSeek.</p>
+        <div class="relative">
+          <input
+            type="password"
+            id="openRouterKeyInput"
+            placeholder="sk-or-v1-... (optional)"
+            class="w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-mono"
+          />
+        </div>
+      </div>
+
+      <!-- System Prompt / Persona -->
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-gray-300">Custom System Persona</label>
+        <textarea
+          id="customPersonaInput"
+          rows="2"
+          placeholder="You are an expert AI software architect and helpful developer assistant..."
+          class="w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"
+        ></textarea>
+      </div>
+
+      <div class="pt-2 flex justify-end space-x-2">
+        <button id="saveSettingsBtn" class="py-2 px-4 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium transition shadow-md shadow-brand-600/30">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Docs Modal -->
+  <div id="apiDocsModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-dark-card border border-dark-border rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-dark-border">
+        <h2 class="font-bold text-base text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          API Documentation
+        </h2>
+        <button id="closeApiDocsBtn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-dark-surface">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+        <div class="p-3 bg-dark-surface rounded-xl border border-dark-border space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-mono font-bold rounded">POST /api/chat</span>
+            <span class="text-gray-400">Chat Completion</span>
+          </div>
+          <p class="text-gray-300">Accepts a conversation array and streams or returns an AI assistant response.</p>
+          <pre class="bg-dark-base p-2.5 rounded-lg text-emerald-300 font-mono text-[11px] overflow-x-auto">curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-2.5-flash",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }'</pre>
+        </div>
+
+        <div class="p-3 bg-dark-surface rounded-xl border border-dark-border space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 font-mono font-bold rounded">GET /api/health</span>
+            <span class="text-gray-400">Health Check</span>
+          </div>
+          <p class="text-gray-300">Monitors service health, memory usage, and runtime framework status.</p>
+        </div>
+
+        <div class="p-3 bg-dark-surface rounded-xl border border-dark-border space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 font-mono font-bold rounded">GET /api/download/apk</span>
+            <span class="text-gray-400">Android APK Binary</span>
+          </div>
+          <p class="text-gray-300">Directly serves the compiled 23MB Android APK artifact (<code class="text-purple-300">app-debug.apk</code>) with instant browser download.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal for Markdown & JSON -->
+  <div id="exportModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-dark-card border border-dark-border rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <h2 class="font-bold text-base text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          Download Conversation
+        </h2>
+        <button id="closeExportBtn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-dark-surface" aria-label="Close export dialog">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div>
+        <p class="text-[11px] text-gray-400 mb-1">Target Conversation</p>
+        <div class="text-xs sm:text-sm font-semibold text-white truncate p-2.5 bg-dark-surface rounded-xl border border-dark-border flex items-center justify-between">
+          <span class="truncate" id="exportSessionTitleText">Current Conversation</span>
+          <span id="exportSessionMeta" class="text-[10px] text-gray-400 font-mono flex-shrink-0 ml-2">0 messages</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-300">Choose export format to download directly to your device:</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Markdown Card -->
+        <div class="p-3.5 bg-dark-surface border border-dark-border hover:border-brand-500/50 rounded-xl flex flex-col justify-between space-y-3 transition">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Markdown
+              </span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">.md</span>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-snug">Rich formatted document with headings, roles, timestamps and code blocks.</p>
+          </div>
+          <button id="downloadMarkdownBtn" class="w-full py-2 px-3 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1.5 shadow-md shadow-brand-600/20 active:scale-95">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Download .md</span>
+          </button>
+        </div>
+
+        <!-- JSON Card -->
+        <div class="p-3.5 bg-dark-surface border border-dark-border hover:border-brand-500/50 rounded-xl flex flex-col justify-between space-y-3 transition">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-xs text-white flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                JSON Data
+              </span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded">.json</span>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-snug">Structured conversation payload with full timestamps, model info, and messages.</p>
+          </div>
+          <button id="downloadJsonBtn" class="w-full py-2 px-3 bg-dark-card hover:bg-dark-border text-cyan-300 border border-cyan-500/30 hover:border-cyan-500/60 rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1.5 active:scale-95">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Download .json</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Copy & Footer -->
+      <div class="pt-2 border-t border-dark-border flex items-center justify-between">
+        <button id="copyMarkdownBtn" class="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 transition py-1.5 px-2 rounded-lg hover:bg-dark-surface active:scale-95">
+          <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+          <span id="copyBtnLabel">Copy Markdown</span>
+        </button>
+        <button id="closeExportBottomBtn" class="py-1.5 px-3 bg-dark-surface hover:bg-dark-border text-xs text-gray-300 rounded-lg transition active:scale-95">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 pointer-events-none transition-all duration-300 transform translate-y-4 opacity-0">
+    <div class="bg-brand-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-medium border border-brand-400/30">
+      <svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+      <span id="toastMessage">Downloaded successfully</span>
+    </div>
+  </div>
+
+  <script>
+    // Local State & Persistence
+    let storedModel = localStorage.getItem('current_model');
+    if (!storedModel || storedModel.includes('2.5')) {
+      storedModel = 'google/gemini-3.6-flash';
+      localStorage.setItem('current_model', storedModel);
+    }
+    let currentModel = storedModel;
+
+    let openRouterKey = localStorage.getItem('openrouter_key') || '';
+    let systemPersona = localStorage.getItem('system_persona') || 'You are an intelligent, helpful AI assistant built with precision and clarity.';
+    let sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+    let currentSessionId = localStorage.getItem('current_session_id') || null;
+
+    if (sessions.length === 0) {
+      const initialSession = {
+        id: 'session_' + Date.now(),
+        title: 'New Conversation',
+        createdAt: Date.now(),
+        messages: [
+          {
+            role: 'assistant',
+            content: "Hello! I am your AI Chatbot companion. You can chat with me directly, configure OpenRouter API keys in Settings, switch models on the top bar, download conversations as Markdown or JSON, or download the compiled Android APK from the sidebar.",
+            timestamp: Date.now()
+          }
+        ]
+      };
+      sessions.push(initialSession);
+      currentSessionId = initialSession.id;
+      saveSessions();
+    } else if (!currentSessionId || !sessions.find(s => s.id === currentSessionId)) {
+      currentSessionId = sessions[0].id;
+    }
+
+    function saveSessions() {
+      localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+      localStorage.setItem('current_session_id', currentSessionId);
+    }
+
+    function getCurrentSession() {
+      return sessions.find(s => s.id === currentSessionId) || sessions[0];
+    }
+
+    // DOM Elements
+    const chatScrollArea = document.getElementById('chatScrollArea');
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sessionList = document.getElementById('sessionList');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const modelPickerBtn = document.getElementById('modelPickerBtn');
+    const modelDropdown = document.getElementById('modelDropdown');
+    const currentModelName = document.getElementById('currentModelName');
+    const keyStatusText = document.getElementById('keyStatusText');
+
+    // Sidebar & Backdrop
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const openSidebarBtn = document.getElementById('openSidebarBtn');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+    function openSidebar() {
+      sidebar.classList.remove('-translate-x-full');
+      sidebarBackdrop.classList.remove('hidden');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.add('-translate-x-full');
+      sidebarBackdrop.classList.add('hidden');
+    }
+
+    openSidebarBtn?.addEventListener('click', openSidebar);
+    closeSidebarBtn?.addEventListener('click', closeSidebar);
+    sidebarBackdrop?.addEventListener('click', closeSidebar);
+
+    // Export Modal & Controls
+    let exportTargetSessionId = currentSessionId;
+    const exportModal = document.getElementById('exportModal');
+    const closeExportBtn = document.getElementById('closeExportBtn');
+    const closeExportBottomBtn = document.getElementById('closeExportBottomBtn');
+    const exportSessionTitleText = document.getElementById('exportSessionTitleText');
+    const exportSessionMeta = document.getElementById('exportSessionMeta');
+    const downloadMarkdownBtn = document.getElementById('downloadMarkdownBtn');
+    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+    const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+    const copyBtnLabel = document.getElementById('copyBtnLabel');
+    const downloadChatBtn = document.getElementById('downloadChatBtn');
+    const quickDownloadBtn = document.getElementById('quickDownloadBtn');
+    const toastNotification = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+
+    function showToast(msg) {
+      if (!toastNotification || !toastMessage) return;
+      toastMessage.textContent = msg;
+      toastNotification.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        toastNotification.classList.remove('translate-y-4', 'opacity-0');
+        toastNotification.classList.add('translate-y-0', 'opacity-100');
+      });
+      setTimeout(() => {
+        toastNotification.classList.remove('translate-y-0', 'opacity-100');
+        toastNotification.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toastNotification.classList.add('hidden'), 300);
+      }, 2500);
+    }
+
+    function openExportModal(sessionId) {
+      exportTargetSessionId = sessionId || currentSessionId;
+      const targetSession = sessions.find(s => s.id === exportTargetSessionId) || getCurrentSession();
+      if (exportSessionTitleText) exportSessionTitleText.textContent = targetSession.title || 'Conversation';
+      const count = (targetSession.messages || []).length;
+      if (exportSessionMeta) exportSessionMeta.textContent = `${count} message${count === 1 ? '' : 's'}`;
+      if (copyBtnLabel) copyBtnLabel.textContent = 'Copy Markdown';
+      exportModal.classList.remove('hidden');
+    }
+
+    function closeExportModal() {
+      exportModal.classList.add('hidden');
+    }
+
+    downloadChatBtn?.addEventListener('click', () => openExportModal(currentSessionId));
+    quickDownloadBtn?.addEventListener('click', () => openExportModal(currentSessionId));
+    closeExportBtn?.addEventListener('click', closeExportModal);
+    closeExportBottomBtn?.addEventListener('click', closeExportModal);
+    exportModal?.addEventListener('click', (e) => {
+      if (e.target === exportModal) closeExportModal();
+    });
+
+    // Generate Markdown & JSON content
+    function generateMarkdown(session) {
+      let md = `# ${session.title || 'Conversation'}\n\n`;
+      md += `* **Export Date:** ${new Date().toLocaleString()}\n`;
+      md += `* **Model:** ${session.model || currentModel}\n`;
+      md += `* **Messages:** ${(session.messages || []).length}\n\n`;
+      md += `---\n\n`;
+
+      (session.messages || []).forEach(msg => {
+        const isUser = msg.role === 'user';
+        const roleLabel = isUser ? '🧑 User' : '🤖 Assistant';
+        const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        md += `### ${roleLabel}${timeStr ? ` · ${timeStr}` : ''}\n\n`;
+        md += `${msg.content}\n\n`;
+      });
+      return md;
+    }
+
+    function generateJson(session) {
+      const payload = {
+        app: "AI Chatbot",
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        session: {
+          id: session.id,
+          title: session.title,
+          model: session.model || currentModel,
+          createdAt: session.createdAt,
+          messages: session.messages || []
+        }
+      };
+      return JSON.stringify(payload, null, 2);
+    }
+
+    function triggerDownload(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function getSessionSlug(session) {
+      const title = (session.title || 'conversation').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      return `chat-${title}-${dateStr}`;
+    }
+
+    downloadMarkdownBtn?.addEventListener('click', () => {
+      const targetSession = sessions.find(s => s.id === exportTargetSessionId) || getCurrentSession();
+      const md = generateMarkdown(targetSession);
+      const filename = `${getSessionSlug(targetSession)}.md`;
+      triggerDownload(md, filename, 'text/markdown;charset=utf-8');
+      showToast(`Exported ${filename}`);
+      closeExportModal();
+    });
+
+    downloadJsonBtn?.addEventListener('click', () => {
+      const targetSession = sessions.find(s => s.id === exportTargetSessionId) || getCurrentSession();
+      const json = generateJson(targetSession);
+      const filename = `${getSessionSlug(targetSession)}.json`;
+      triggerDownload(json, filename, 'application/json;charset=utf-8');
+      showToast(`Exported ${filename}`);
+      closeExportModal();
+    });
+
+    copyMarkdownBtn?.addEventListener('click', async () => {
+      const targetSession = sessions.find(s => s.id === exportTargetSessionId) || getCurrentSession();
+      const md = generateMarkdown(targetSession);
+      try {
+        await navigator.clipboard.writeText(md);
+        if (copyBtnLabel) copyBtnLabel.textContent = 'Copied!';
+        showToast('Copied Markdown to clipboard');
+        setTimeout(() => {
+          if (copyBtnLabel) copyBtnLabel.textContent = 'Copy Markdown';
+        }, 2000);
+      } catch (err) {
+        showToast('Failed to copy to clipboard');
+      }
+    });
+
+    // Settings Modal
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const resetToFreeBtn = document.getElementById('resetToFreeBtn');
+    const openRouterKeyInput = document.getElementById('openRouterKeyInput');
+    const customPersonaInput = document.getElementById('customPersonaInput');
+
+    openSettingsBtn?.addEventListener('click', () => {
+      openRouterKeyInput.value = openRouterKey;
+      customPersonaInput.value = systemPersona;
+      settingsModal.classList.remove('hidden');
+    });
+    closeSettingsBtn?.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+    saveSettingsBtn?.addEventListener('click', () => {
+      openRouterKey = openRouterKeyInput.value.trim();
+      systemPersona = customPersonaInput.value.trim() || systemPersona;
+      if (openRouterKey) {
+        localStorage.setItem('openrouter_key', openRouterKey);
+      } else {
+        localStorage.removeItem('openrouter_key');
+      }
+      localStorage.setItem('system_persona', systemPersona);
+      updateKeyBadge();
+      settingsModal.classList.add('hidden');
+      showToast('Settings saved successfully');
+    });
+
+    // One-click switch to 100% Free Gemini
+    resetToFreeBtn?.addEventListener('click', () => {
+      openRouterKey = '';
+      localStorage.removeItem('openrouter_key');
+      if (openRouterKeyInput) openRouterKeyInput.value = '';
+      currentModel = 'google/gemini-3.6-flash';
+      localStorage.setItem('current_model', currentModel);
+      initModelDisplay();
+      updateKeyBadge();
+      settingsModal.classList.add('hidden');
+      showToast('Switched to 100% Free Gemini (no credits needed)');
+    });
+
+    // API Docs Modal
+    const apiDocsModal = document.getElementById('apiDocsModal');
+    const openApiDocsBtn = document.getElementById('openApiDocsBtn');
+    const closeApiDocsBtn = document.getElementById('closeApiDocsBtn');
+    openApiDocsBtn?.addEventListener('click', () => apiDocsModal.classList.remove('hidden'));
+    closeApiDocsBtn?.addEventListener('click', () => apiDocsModal.classList.add('hidden'));
+
+    // Model Selector
+    modelPickerBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      modelDropdown.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => modelDropdown?.classList.add('hidden'));
+
+    document.querySelectorAll('.model-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = btn.getAttribute('data-model');
+        if (m) {
+          currentModel = m;
+          localStorage.setItem('current_model', currentModel);
+          const label = btn.querySelector('span')?.textContent || m;
+          currentModelName.textContent = label;
+          modelDropdown.classList.add('hidden');
+          updateKeyBadge();
+        }
+      });
+    });
+
+    // Initialize displayed model name
+    function initModelDisplay() {
+      const activeOpt = document.querySelector(`.model-opt[data-model="${currentModel}"]`);
+      if (activeOpt) {
+        currentModelName.textContent = activeOpt.querySelector('span')?.textContent || currentModel;
+      } else {
+        const shortName = currentModel.replace('google/', '').replace('-preview', '');
+        currentModelName.textContent = shortName.charAt(0).toUpperCase() + shortName.slice(1);
+      }
+    }
+    initModelDisplay();
+
+    function updateKeyBadge() {
+      if (openRouterKey) {
+        keyStatusText.textContent = 'Custom OpenRouter Key';
+        keyStatusText.classList.add('text-brand-400');
+      } else {
+        const shortName = currentModel.replace('google/', '').replace('-preview', '');
+        keyStatusText.textContent = `Free · ${shortName.charAt(0).toUpperCase() + shortName.slice(1)}`;
+        keyStatusText.classList.remove('text-brand-400');
+      }
+    }
+    updateKeyBadge();
+
+    // Search Bar for Chat History
+    let searchQuery = '';
+    const sessionSearchInput = document.getElementById('sessionSearchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const sessionCountBadge = document.getElementById('sessionCountBadge');
+
+    sessionSearchInput?.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      if (clearSearchBtn) {
+        clearSearchBtn.classList.toggle('hidden', !searchQuery);
+      }
+      renderSessions();
+    });
+
+    clearSearchBtn?.addEventListener('click', () => {
+      if (sessionSearchInput) sessionSearchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn?.classList.add('hidden');
+      sessionSearchInput?.focus();
+      renderSessions();
+    });
+
+    sessionSearchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        sessionSearchInput.value = '';
+        searchQuery = '';
+        clearSearchBtn?.classList.add('hidden');
+        renderSessions();
+      }
+    });
+
+    // Render Sessions
+    function renderSessions() {
+      sessionList.innerHTML = '';
+
+      const filteredSessions = sessions.filter(sess => {
+        if (!searchQuery) return true;
+        const matchTitle = (sess.title || '').toLowerCase().includes(searchQuery);
+        const matchMessages = (sess.messages || []).some(m => (m.content || '').toLowerCase().includes(searchQuery));
+        return matchTitle || matchMessages;
+      });
+
+      if (sessionCountBadge) {
+        if (searchQuery) {
+          sessionCountBadge.textContent = `${filteredSessions.length} of ${sessions.length}`;
+        } else {
+          sessionCountBadge.textContent = `${sessions.length} chat${sessions.length === 1 ? '' : 's'}`;
+        }
+      }
+
+      if (filteredSessions.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'px-3 py-6 text-center text-xs text-gray-400 space-y-2';
+        emptyDiv.innerHTML = `
+          <div class="w-8 h-8 mx-auto rounded-full bg-dark-surface border border-dark-border flex items-center justify-center text-gray-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">No conversations match <br/><span class="text-white font-medium">"${escapeHtml(searchQuery)}"</span></p>
+          <button id="clearSearchEmptyBtn" class="py-1 px-2.5 bg-dark-surface hover:bg-dark-border text-brand-400 hover:text-brand-300 rounded-lg text-[11px] font-medium transition border border-dark-border">
+            Clear filter
+          </button>
+        `;
+        sessionList.appendChild(emptyDiv);
+        document.getElementById('clearSearchEmptyBtn')?.addEventListener('click', () => {
+          if (sessionSearchInput) sessionSearchInput.value = '';
+          searchQuery = '';
+          clearSearchBtn?.classList.add('hidden');
+          renderSessions();
+        });
+        return;
+      }
+
+      filteredSessions.forEach(sess => {
+        const isActive = sess.id === currentSessionId;
+        const btn = document.createElement('div');
+        btn.className = 'w-full px-3 py-2.5 rounded-xl text-xs flex items-center justify-between group transition cursor-pointer select-none ' + 
+          (isActive ? 'bg-dark-surface text-white font-medium border border-dark-border shadow-sm' : 'text-gray-400 hover:text-gray-200 hover:bg-dark-surface/50');
+        
+        let matchSnippetHtml = '';
+        if (searchQuery) {
+          const matchedMsg = (sess.messages || []).find(m => (m.content || '').toLowerCase().includes(searchQuery));
+          if (matchedMsg) {
+            const raw = matchedMsg.content;
+            const idx = raw.toLowerCase().indexOf(searchQuery);
+            const start = Math.max(0, idx - 15);
+            const snippet = raw.slice(start, start + 45).replace(/\n/g, ' ');
+            matchSnippetHtml = `<div class="text-[10px] text-brand-400 font-normal truncate mt-0.5">...${escapeHtml(snippet)}...</div>`;
+          }
+        }
+
+        btn.innerHTML = `
+          <div class="flex items-center space-x-2 truncate flex-1 min-w-0 mr-2">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-500 group-hover:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <div class="truncate min-w-0">
+              <span class="truncate block">${escapeHtml(sess.title)}</span>
+              ${matchSnippetHtml}
+            </div>
+          </div>
+          <div class="flex items-center space-x-1 flex-shrink-0">
+            <button class="download-sess p-1.5 text-gray-400 hover:text-brand-400 rounded-lg hover:bg-dark-card transition" title="Download this conversation" aria-label="Download conversation">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </button>
+            <button class="delete-sess p-1.5 text-gray-400 hover:text-rose-400 rounded-lg hover:bg-dark-card transition ${sessions.length <= 1 ? 'hidden' : ''}" title="Delete conversation" aria-label="Delete conversation">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+        `;
+
+        btn.addEventListener('click', (e) => {
+          if (e.target.closest('.download-sess')) {
+            e.stopPropagation();
+            openExportModal(sess.id);
+            return;
+          }
+          if (e.target.closest('.delete-sess')) {
+            e.stopPropagation();
+            deleteSession(sess.id);
+            return;
+          }
+          currentSessionId = sess.id;
+          saveSessions();
+          renderSessions();
+          renderMessages();
+          if (window.innerWidth < 768) closeSidebar();
+        });
+
+        sessionList.appendChild(btn);
+      });
+    }
+
+    function deleteSession(id) {
+      if (sessions.length <= 1) return;
+      sessions = sessions.filter(s => s.id !== id);
+      if (currentSessionId === id) currentSessionId = sessions[0].id;
+      saveSessions();
+      renderSessions();
+      renderMessages();
+      showToast('Conversation deleted');
+    }
+
+    newChatBtn?.addEventListener('click', () => {
+      const newSess = {
+        id: 'session_' + Date.now(),
+        title: 'New Conversation',
+        createdAt: Date.now(),
+        messages: [
+          {
+            role: 'assistant',
+            content: "Started a fresh conversation. What would you like to build or discuss?",
+            timestamp: Date.now()
+          }
+        ]
+      };
+      sessions.unshift(newSess);
+      currentSessionId = newSess.id;
+      if (sessionSearchInput) sessionSearchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn?.classList.add('hidden');
+      saveSessions();
+      renderSessions();
+      renderMessages();
+      if (window.innerWidth < 768) closeSidebar();
+      messageInput?.focus();
+    });
+
+    clearChatBtn?.addEventListener('click', () => {
+      const sess = getCurrentSession();
+      sess.messages = [{
+        role: 'assistant',
+        content: 'History cleared. Ready for your prompt.',
+        timestamp: Date.now()
+      }];
+      saveSessions();
+      renderMessages();
+      showToast('Chat history cleared');
+    });
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatMessageContent(text) {
+      if (!text) return '';
+      const codeBlocks = [];
+
+      // 1. Extract code blocks so formatting and newlines remain pristine
+      let parsed = text.replace(/```([a-zA-Z0-9_\-+#.]*)\r?\n?([\s\S]*?)```/g, (m, lang, code) => {
+        const placeholder = `___CODE_BLOCK_SLOT_${codeBlocks.length}___`;
+        const cleanLang = (lang || '').trim().toLowerCase() || 'code';
+        const cleanCode = code.replace(/^\r?\n+|\r?\n+$/g, '');
+        codeBlocks.push({
+          lang: cleanLang,
+          code: escapeHtml(cleanCode)
+        });
+        return placeholder;
+      });
+
+      // 2. Escape HTML for regular text
+      parsed = escapeHtml(parsed);
+
+      // 3. Inline code with black background and crisp white text
+      parsed = parsed.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-black text-white font-mono text-[11px] rounded border border-neutral-800">$1</code>');
+
+      // 4. Basic formatting for bold and line breaks
+      parsed = parsed.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+      parsed = parsed.replace(/\n/g, '<br/>');
+
+      // 5. Restore ChatGPT-style pitch-black code blocks with header & copy button
+      codeBlocks.forEach((item, index) => {
+        const blockHtml = `
+          <div class="code-block-container my-3 rounded-xl overflow-hidden bg-black border border-neutral-800 shadow-xl max-w-full">
+            <div class="flex items-center justify-between px-3.5 py-2 bg-[#171717] border-b border-neutral-800 select-none">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-neutral-600 inline-block"></span>
+                <span class="text-[11px] font-mono font-medium text-neutral-400 uppercase tracking-wider">${item.lang}</span>
+              </div>
+              <button type="button" class="copy-code-btn flex items-center space-x-1.5 text-neutral-300 hover:text-white text-xs px-2.5 py-1 rounded-md hover:bg-neutral-800 active:scale-95 transition cursor-pointer" title="Copy code" aria-label="Copy snippet">
+                <span class="copy-icon flex items-center">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                </span>
+                <span class="copy-label text-[11px] font-sans font-medium">Copy code</span>
+              </button>
+            </div>
+            <pre class="m-0 p-3.5 sm:p-4 bg-black text-white font-mono text-xs leading-relaxed overflow-x-auto selection:bg-neutral-800 selection:text-white"><code class="block font-mono text-white whitespace-pre">${item.code}</code></pre>
+          </div>
+        `.trim();
+        parsed = parsed.replace(`___CODE_BLOCK_SLOT_${index}___`, blockHtml);
+      });
+
+      return parsed;
+    }
+
+    function renderMessages() {
+      const sess = getCurrentSession();
+      chatScrollArea.innerHTML = '';
+
+      sess.messages.forEach(msg => {
+        const isUser = msg.role === 'user';
+        const el = document.createElement('div');
+        el.className = 'flex flex-col space-y-1 ' + (isUser ? 'items-end' : 'items-start');
+
+        el.innerHTML = `
+          <div class="flex items-center space-x-1.5 px-1 text-[11px] text-gray-500 font-medium">
+            <span>${isUser ? 'You' : 'Assistant'}</span>
+            <span>·</span>
+            <span>${new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+          <div class="max-w-[90%] sm:max-w-xl md:max-w-2xl lg:max-w-3xl px-4 py-3 rounded-2xl text-xs leading-relaxed ${
+            isUser
+              ? 'bg-brand-600 text-white rounded-tr-sm shadow-md shadow-brand-600/20'
+              : 'bg-dark-card border border-dark-border text-gray-200 rounded-tl-sm shadow-sm'
+          }">
+            ${formatMessageContent(msg.content)}
+          </div>
+        `;
+        chatScrollArea.appendChild(el);
+      });
+
+      chatScrollArea.scrollTop = chatScrollArea.scrollHeight;
+    }
+
+    // Global delegated click listener for copy-code buttons in chat
+    chatScrollArea?.addEventListener('click', async (e) => {
+      const copyBtn = e.target.closest('.copy-code-btn');
+      if (!copyBtn) return;
+      
+      const container = copyBtn.closest('.code-block-container');
+      const codeEl = container?.querySelector('code');
+      if (!codeEl) return;
+      
+      const textToCopy = codeEl.innerText;
+      let success = false;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          success = true;
+        } catch (err) {
+          // fallback below
+        }
+      }
+
+      if (!success) {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = textToCopy;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          textarea.style.top = '0';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          success = document.execCommand('copy');
+          document.body.removeChild(textarea);
+        } catch (err) {
+          success = false;
+        }
+      }
+
+      const copyLabel = copyBtn.querySelector('.copy-label');
+      const copyIcon = copyBtn.querySelector('.copy-icon');
+
+      if (success) {
+        if (copyLabel) {
+          copyLabel.textContent = 'Copied!';
+          copyLabel.className = 'copy-label text-[11px] font-sans font-semibold text-emerald-400';
+        }
+        if (copyIcon) {
+          copyIcon.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+        }
+        showToast('Snippet copied to clipboard');
+        setTimeout(() => {
+          if (copyLabel) {
+            copyLabel.textContent = 'Copy code';
+            copyLabel.className = 'copy-label text-[11px] font-sans font-medium';
+          }
+          if (copyIcon) {
+            copyIcon.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>';
+          }
+        }, 2000);
+      } else {
+        showToast('Unable to copy snippet');
+      }
+    });
+
+    // Auto-resize textarea
+    messageInput?.addEventListener('input', () => {
+      messageInput.style.height = 'auto';
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
+    });
+
+    messageInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    // Send Message
+    chatForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = messageInput.value.trim();
+      if (!content) return;
+
+      const sess = getCurrentSession();
+
+      // Add user message
+      sess.messages.push({
+        role: 'user',
+        content,
+        timestamp: Date.now()
+      });
+
+      if (sess.title === 'New Conversation' && sess.messages.length <= 3) {
+        sess.title = content.slice(0, 30);
+      }
+
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+      sendBtn.disabled = true;
+
+      // Temporary assistant typing indicator
+      const typingMessage = {
+        role: 'assistant',
+        content: 'Thinking...',
+        timestamp: Date.now(),
+        isTyping: true
+      };
+      sess.messages.push(typingMessage);
+      saveSessions();
+      renderSessions();
+      renderMessages();
+
+      async function sendRequest(modelName, apiKeyVal) {
+        const payloadMessages = [
+          { role: 'system', content: systemPersona },
+          ...sess.messages
+            .filter(m => !m.isTyping)
+            .map(m => ({ role: m.role, content: m.content }))
+        ];
+
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelName,
+            messages: payloadMessages,
+            apiKey: apiKeyVal || undefined
+          })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          throw new Error(data.error || ('HTTP error ' + resp.status));
+        }
+        return data;
+      }
+
+      try {
+        let data;
+        try {
+          data = await sendRequest(currentModel, openRouterKey);
+        } catch (firstErr) {
+          const errMsg = (firstErr.message || '').toLowerCase();
+          // Detect credit or token limits from third-party / OpenRouter
+          if (errMsg.includes('credit') || errMsg.includes('max_token') || errMsg.includes('afford') || errMsg.includes('402')) {
+            // Auto switch to free Gemini 3.6 Flash and retry seamlessly
+            currentModel = 'google/gemini-3.6-flash';
+            localStorage.setItem('current_model', currentModel);
+            initModelDisplay();
+            updateKeyBadge();
+            showToast('Switched to Free Gemini (zero credits required)');
+            data = await sendRequest('google/gemini-3.6-flash', undefined);
+          } else {
+            throw firstErr;
+          }
+        }
+
+        const reply = data.reply || data.choices?.[0]?.message?.content || "No response received.";
+
+        sess.messages = sess.messages.filter(m => !m.isTyping);
+        sess.messages.push({
+          role: 'assistant',
+          content: reply,
+          timestamp: Date.now()
+        });
+
+      } catch (err) {
+        sess.messages = sess.messages.filter(m => !m.isTyping);
+        sess.messages.push({
+          role: 'assistant',
+          content: '⚠️ Error: ' + err.message,
+          timestamp: Date.now()
+        });
+      } finally {
+        sendBtn.disabled = false;
+        saveSessions();
+        renderSessions();
+        renderMessages();
+      }
+    });
+
+    // Initial render
+    renderSessions();
+    renderMessages();
+  </script>
+</body>
+</html>

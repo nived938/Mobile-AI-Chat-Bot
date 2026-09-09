@@ -58,6 +58,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.example.data.local.entity.MessageEntity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -296,15 +306,33 @@ fun MessageBubble(
               }
             }
 
-            // Message text
-            Text(
-              text = message.content,
-              style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = (15 * fontScale).sp,
-                lineHeight = (22 * fontScale).sp,
-                color = MaterialTheme.colorScheme.onBackground
-              )
-            )
+            // Message text & code blocks
+            val contentParts = remember(message.content) {
+              parseMessageContent(message.content)
+            }
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+              contentParts.forEach { part ->
+                if (part.isCode) {
+                  CodeBlockView(
+                    code = part.content,
+                    lang = part.lang,
+                    fontScale = fontScale
+                  )
+                } else {
+                  if (part.content.isNotBlank()) {
+                    Text(
+                      text = part.content,
+                      style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = (15 * fontScale).sp,
+                        lineHeight = (22 * fontScale).sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                      )
+                    )
+                  }
+                }
+              }
+            }
 
             // Timestamp and status footer
             Spacer(modifier = Modifier.height(4.dp))
@@ -333,6 +361,137 @@ fun MessageBubble(
             }
           }
         }
+      }
+    }
+  }
+}
+
+private data class MessagePart(
+  val isCode: Boolean,
+  val content: String,
+  val lang: String = "code"
+)
+
+private fun parseMessageContent(raw: String): List<MessagePart> {
+  val pattern = Regex("```([a-zA-Z0-9_\\-+.]*)\\r?\\n?([\\s\\S]*?)```")
+  val parts = mutableListOf<MessagePart>()
+  var lastIndex = 0
+  val matches = pattern.findAll(raw)
+
+  for (match in matches) {
+    if (match.range.first > lastIndex) {
+      val textBefore = raw.substring(lastIndex, match.range.first)
+      if (textBefore.isNotEmpty()) {
+        parts.add(MessagePart(isCode = false, content = textBefore))
+      }
+    }
+    val lang = match.groupValues.getOrNull(1)?.trim()?.ifEmpty { "code" } ?: "code"
+    val code = match.groupValues.getOrNull(2)?.trim() ?: ""
+    parts.add(MessagePart(isCode = true, content = code, lang = lang))
+    lastIndex = match.range.last + 1
+  }
+
+  if (lastIndex < raw.length) {
+    val remaining = raw.substring(lastIndex)
+    if (remaining.isNotEmpty()) {
+      parts.add(MessagePart(isCode = false, content = remaining))
+    }
+  }
+
+  if (parts.isEmpty()) {
+    parts.add(MessagePart(isCode = false, content = raw))
+  }
+
+  return parts
+}
+
+@Composable
+private fun CodeBlockView(
+  code: String,
+  lang: String,
+  fontScale: Float
+) {
+  var copied by remember { mutableStateOf(false) }
+  val clipboard = LocalClipboardManager.current
+
+  LaunchedEffect(copied) {
+    if (copied) {
+      delay(2000)
+      copied = false
+    }
+  }
+
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 4.dp),
+    shape = RoundedCornerShape(8.dp),
+    color = Color.Black,
+    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF27272A))
+  ) {
+    Column {
+      // Header with language and copy button
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .background(Color(0xFF18181B))
+          .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = lang.uppercase(),
+          color = Color(0xFFA1A1AA),
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold
+          )
+        )
+        Row(
+          modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .clickable {
+              clipboard.setText(AnnotatedString(code))
+              copied = true
+            }
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+          Icon(
+            imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+            contentDescription = "Copy code snippet",
+            tint = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
+            modifier = Modifier.size(13.dp)
+          )
+          Text(
+            text = if (copied) "Copied!" else "Copy code",
+            color = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Medium
+            )
+          )
+        }
+      }
+
+      // Black box with white text
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .horizontalScroll(rememberScrollState())
+          .padding(10.dp)
+      ) {
+        Text(
+          text = code,
+          style = MaterialTheme.typography.bodySmall.copy(
+            fontSize = (12 * fontScale).sp,
+            lineHeight = (18 * fontScale).sp,
+            fontFamily = FontFamily.Monospace,
+            color = Color.White
+          )
+        )
       }
     }
   }
