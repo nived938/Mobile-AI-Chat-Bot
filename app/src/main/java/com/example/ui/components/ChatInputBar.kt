@@ -264,7 +264,7 @@ fun ChatInputBar(
           onValueChange = { inputText = it },
           placeholder = {
             Text(
-              text = if (attachedImageBase64 != null) "Ask about this photo..." else "Type a message...",
+              text = if (attachedImageBase64 != null) "Ask about this photo..." else "Ask anything...",
               style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             )
           },

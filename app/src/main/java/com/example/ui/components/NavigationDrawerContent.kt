@@ -109,7 +109,7 @@ fun NavigationDrawerContent(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
           Text(
-            text = "AI Chatbot",
+            text = "NovaMind",
             style = MaterialTheme.typography.titleMedium.copy(
               fontWeight = FontWeight.Bold,
               color = MaterialTheme.colorScheme.onBackground

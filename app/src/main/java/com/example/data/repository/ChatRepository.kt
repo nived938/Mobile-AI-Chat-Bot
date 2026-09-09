@@ -223,7 +223,7 @@ class ChatRepository(
     chatDao.insertConversation(
       ConversationEntity(
         id = welcomeConvId,
-        title = "Welcome to AI Chatbot",
+        title = "Welcome to NovaMind",
         provider = AiProvider.GEMINI.name,
         model = GeminiModel.FLASH.modelId,
         personaId = PersonaRole.GENERAL.id,
@@ -232,7 +232,7 @@ class ChatRepository(
       )
     )
 
-    val introText = "Welcome to your AI Chatbot!\n\n" +
+    val introText = "Welcome to NovaMind!\n\n" +
       "✨ **Key Capabilities**:\n" +
       "- 🔑 **OpenRouter & Gemini Support**: Use built-in Gemini models (`gemini-3.5-flash`, `gemini-3.1-flash-lite`, and `gemini-3.1-pro-preview`) or connect your OpenRouter API key.\n" +
       "- 💾 **Local SQLite Storage**: Built on native Room SQLite with offline access.\n" +

@@ -39,7 +39,7 @@ import java.io.InputStream
 
 data class ChatUiState(
   val currentConversationId: String? = null,
-  val currentConversationTitle: String = "AI Chatbot",
+  val currentConversationTitle: String = "NovaMind",
   val provider: AiProvider = AiProvider.GEMINI,
   val geminiModel: GeminiModel = GeminiModel.FLASH,
   val openRouterModel: OpenRouterModel = OpenRouterModel.CLAUDE_35_SONNET,
@@ -170,7 +170,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (remaining.isNotEmpty()) {
           selectConversation(remaining.first().id)
         } else {
-          _uiState.value = _uiState.value.copy(currentConversationId = null, currentConversationTitle = "AI Chatbot")
+          _uiState.value = _uiState.value.copy(currentConversationId = null, currentConversationTitle = "NovaMind")
           _currentMessages.value = emptyList()
         }
       }

@@ -63,6 +63,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -412,6 +414,8 @@ private fun CodeBlockView(
   fontScale: Float
 ) {
   var copied by remember { mutableStateOf(false) }
+  var isFolded by remember { mutableStateOf(false) }
+  val lineCount = remember(code) { code.lines().size }
   val clipboard = LocalClipboardManager.current
 
   LaunchedEffect(copied) {
@@ -430,68 +434,149 @@ private fun CodeBlockView(
     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF27272A))
   ) {
     Column {
-      // Header with language and copy button
+      // Header with language, line count badge, fold toggle, and copy button
       Row(
         modifier = Modifier
           .fillMaxWidth()
           .background(Color(0xFF18181B))
+          .clickable { isFolded = !isFolded }
           .padding(horizontal = 10.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Text(
-          text = lang.uppercase(),
-          color = Color(0xFFA1A1AA),
-          style = MaterialTheme.typography.labelSmall.copy(
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Text(
+            text = lang.uppercase(),
+            color = Color(0xFFA1A1AA),
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 10.sp,
+              fontWeight = FontWeight.SemiBold
+            )
           )
-        )
+          Surface(
+            shape = RoundedCornerShape(3.dp),
+            color = Color(0xFF27272A)
+          ) {
+            Text(
+              text = "$lineCount ${if (lineCount == 1) "line" else "lines"}",
+              modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+              color = Color(0xFFA1A1AA),
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp
+              )
+            )
+          }
+        }
+
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          // Fold/Expand toggle button
+          Row(
+            modifier = Modifier
+              .clip(RoundedCornerShape(4.dp))
+              .clickable { isFolded = !isFolded }
+              .padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+          ) {
+            Icon(
+              imageVector = if (isFolded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+              contentDescription = if (isFolded) "Expand code" else "Collapse code",
+              tint = Color(0xFFA1A1AA),
+              modifier = Modifier.size(14.dp)
+            )
+            Text(
+              text = if (isFolded) "Expand" else "Collapse",
+              color = Color(0xFFA1A1AA),
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+              )
+            )
+          }
+
+          // Copy button
+          Row(
+            modifier = Modifier
+              .clip(RoundedCornerShape(4.dp))
+              .clickable {
+                clipboard.setText(AnnotatedString(code))
+                copied = true
+              }
+              .padding(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+          ) {
+            Icon(
+              imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+              contentDescription = "Copy code snippet",
+              tint = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
+              modifier = Modifier.size(13.dp)
+            )
+            Text(
+              text = if (copied) "Copied!" else "Copy",
+              color = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+              )
+            )
+          }
+        }
+      }
+
+      // Code body or collapsed summary banner
+      if (isFolded) {
         Row(
           modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .clickable {
-              clipboard.setText(AnnotatedString(code))
-              copied = true
-            }
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(4.dp)
+            .fillMaxWidth()
+            .clickable { isFolded = false }
+            .background(Color(0xFF0F0F11))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-            contentDescription = "Copy code snippet",
-            tint = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
-            modifier = Modifier.size(13.dp)
+          Text(
+            text = "$lineCount lines hidden (collapsed)",
+            color = Color(0xFF71717A),
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontSize = 10.sp,
+              fontFamily = FontFamily.Monospace
+            )
           )
           Text(
-            text = if (copied) "Copied!" else "Copy code",
-            color = if (copied) Color(0xFF34D399) else Color(0xFFA1A1AA),
+            text = "Tap to expand ↓",
+            color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.labelSmall.copy(
               fontSize = 10.sp,
               fontWeight = FontWeight.Medium
             )
           )
         }
-      }
-
-      // Black box with white text
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .horizontalScroll(rememberScrollState())
-          .padding(10.dp)
-      ) {
-        Text(
-          text = code,
-          style = MaterialTheme.typography.bodySmall.copy(
-            fontSize = (12 * fontScale).sp,
-            lineHeight = (18 * fontScale).sp,
-            fontFamily = FontFamily.Monospace,
-            color = Color.White
+      } else {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(10.dp)
+        ) {
+          Text(
+            text = code,
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontSize = (12 * fontScale).sp,
+              lineHeight = (18 * fontScale).sp,
+              fontFamily = FontFamily.Monospace,
+              color = Color.White
+            )
           )
-        )
+        }
       }
     }
   }

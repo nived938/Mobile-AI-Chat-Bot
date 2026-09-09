@@ -1,6 +1,6 @@
 {
-  "name": "AI Chatbot",
-  "description": "An AI chatbot with OpenRouter and Gemini models, local SQLite storage, dark-mode customizable UI, end-to-end encryption, and offline synchronization.",
-  "requestFramePermissions": [],
+  "name": "NovaMind",
+  "description": "NovaMind: Advanced AI companion with ChatGPT-style streaming, multimodal file and image uploads, intelligent AI object replacement & inpaint editor, and Gemini models. Created by PowerPlayExe.",
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

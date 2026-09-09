@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>AI Chatbot</title>
-  <meta name="description" content="AI Chatbot with OpenRouter & Gemini, SQLite persistence, and Android app companion">
+  <title>NovaMind</title>
+  <meta name="description" content="NovaMind: Advanced AI companion with ChatGPT-style streaming, multimodal file and image uploads, intelligent AI object replacement & inpaint editor, and Gemini models. Created by PowerPlayExe.">
+  <meta property="og:title" content="NovaMind">
+  <meta property="og:description" content="NovaMind: Advanced AI companion with ChatGPT-style streaming, multimodal file and image uploads, intelligent AI object replacement & inpaint editor, and Gemini models. Created by PowerPlayExe.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -73,10 +75,10 @@
           </div>
           <div>
             <h1 class="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-              AI Chatbot
+              NovaMind
               <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-brand-500/20 text-brand-400 rounded-full border border-brand-500/30">v1.0</span>
             </h1>
-            <p class="text-[11px] text-gray-400">OpenRouter & Gemini</p>
+            <p class="text-[11px] text-gray-400">Intelligence by PowerPlayExe</p>
           </div>
         </div>
         <button id="closeSidebarBtn" class="md:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-dark-surface" aria-label="Close sidebar">
@@ -157,6 +159,15 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           <span>Download Android APK</span>
         </a>
+      </div>
+
+      <!-- Creator Credit -->
+      <div class="px-3 py-2 border-t border-dark-border/70 bg-dark-base/50 flex items-center justify-between text-[11px] text-gray-400 select-none">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-brand-400"></span>
+          <span>Created by <strong class="text-white font-semibold">PowerPlayExe</strong></span>
+        </span>
+        <span class="text-[10px] text-brand-300 font-mono bg-brand-500/15 px-2 py-0.5 rounded-full border border-brand-500/30">Developer</span>
       </div>
 
       <!-- Settings & API Docs Footer -->
@@ -247,6 +258,13 @@
 
         <!-- Right Header Items -->
         <div class="flex items-center space-x-2">
+          <!-- Toggle Fold All Code in conversation (visible when code is present) -->
+          <button id="toggleAllCodeBtn" class="hidden items-center space-x-1 px-2.5 sm:px-3 py-1.5 bg-dark-surface hover:bg-dark-border active:scale-95 border border-dark-border rounded-xl text-xs font-medium text-gray-300 hover:text-white transition shadow-sm cursor-pointer" title="Fold / Unfold all code blocks in conversation" aria-label="Toggle fold all code">
+            <svg class="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+            <span id="toggleAllCodeLabel" class="hidden sm:inline">Fold Code</span>
+            <span class="sm:hidden">Fold</span>
+          </button>
+
           <!-- Download Conversation Button -->
           <button id="downloadChatBtn" class="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 bg-dark-surface hover:bg-dark-border active:scale-95 border border-dark-border rounded-xl text-xs font-medium text-gray-200 hover:text-white transition shadow-sm" title="Download Conversation">
             <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -264,30 +282,133 @@
       </header>
 
       <!-- Message History Viewport: takes all remaining height -->
-      <div id="chatScrollArea" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4" role="log" aria-live="polite">
+      <div id="chatScrollArea" class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 relative scroll-smooth" role="log" aria-live="polite">
         <!-- Messages rendered by JS -->
       </div>
 
+      <!-- Floating Jump to Latest Message Button (shown when user scrolls up) -->
+      <div class="relative w-full max-w-4xl mx-auto h-0 pointer-events-none">
+        <button
+          id="scrollToBottomBtn"
+          type="button"
+          class="hidden absolute -top-12 right-4 sm:right-6 pointer-events-auto items-center space-x-1.5 px-3 py-1.5 bg-dark-card/95 hover:bg-neutral-800 text-gray-200 hover:text-white rounded-full border border-dark-border shadow-xl backdrop-blur transition active:scale-95 text-xs font-medium cursor-pointer z-30"
+          title="Scroll to latest message"
+          aria-label="Scroll to latest message"
+        >
+          <svg class="w-3.5 h-3.5 text-brand-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+          </svg>
+          <span class="text-[11px] font-medium">Latest message</span>
+        </button>
+      </div>
+
       <!-- Pinned Chat Input Area: firmly at bottom of screen -->
-      <div id="chatInputContainer" class="flex-shrink-0 w-full p-2.5 sm:p-3 md:p-4 bg-dark-card/95 backdrop-blur border-t border-dark-border z-20 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+      <div id="chatInputContainer" class="relative flex-shrink-0 w-full p-2.5 sm:p-3 md:p-4 bg-dark-card/95 backdrop-blur border-t border-dark-border z-20 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+        <!-- Drag & Drop Visual Overlay -->
+        <div id="dragDropOverlay" class="hidden absolute inset-2 bg-dark-card/95 border-2 border-dashed border-brand-500 rounded-2xl flex flex-col items-center justify-center pointer-events-none z-30 backdrop-blur-sm transition-all shadow-2xl">
+          <svg class="w-10 h-10 text-brand-400 mb-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+          </svg>
+          <p class="text-sm font-bold text-white">Drop images or files here</p>
+          <p class="text-xs text-brand-300">NovaMind can analyze documents, images, and edit cars/objects</p>
+        </div>
+
         <form id="chatForm" class="max-w-4xl mx-auto flex flex-col space-y-2">
+          <!-- Attachment Preview Tray -->
+          <div id="attachmentTray" class="hidden flex flex-wrap gap-2 px-1 pt-1 pb-1"></div>
+
           <div class="relative flex items-end bg-dark-surface border border-dark-border focus-within:border-brand-500 rounded-2xl p-2 transition shadow-inner">
+            <!-- Hidden file upload input -->
+            <input
+              type="file"
+              id="fileUploadInput"
+              multiple
+              accept="image/*,.txt,.md,.pdf,.json,.csv,.js,.ts,.py,.html,.css"
+              class="hidden"
+            />
+
+            <!-- Upload File / Image Button (Paperclip) -->
+            <button
+              type="button"
+              id="uploadFileBtn"
+              class="p-2.5 text-gray-400 hover:text-white hover:bg-dark-base rounded-xl transition flex items-center justify-center flex-shrink-0 active:scale-95 cursor-pointer mr-1"
+              title="Upload file or image (images can be edited or replaced)"
+              aria-label="Upload file or image"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+              </svg>
+            </button>
+
             <textarea
               id="messageInput"
               rows="1"
-              placeholder="Ask anything... (Enter to send, Shift+Enter for newline)"
+              placeholder="Ask NovaMind anything, upload photos or docs, or type /image..."
               class="w-full bg-transparent text-sm text-gray-100 placeholder-gray-500 focus:outline-none resize-none px-2 py-1 max-h-36 min-h-[36px]"
               aria-label="Chat prompt input"
             ></textarea>
 
-            <button
-              type="submit"
-              id="sendBtn"
-              class="p-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:hover:bg-brand-600 text-white rounded-xl transition shadow-md shadow-brand-600/30 flex-shrink-0 ml-2 active:scale-95"
-              aria-label="Send message"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </button>
+            <div class="flex items-center space-x-1.5 flex-shrink-0 ml-2">
+              <!-- AI Image Studio & Inpaint Button (Wand) -->
+              <button
+                type="button"
+                id="openImageStudioBtn"
+                class="p-2.5 bg-dark-base hover:bg-purple-950/50 text-purple-400 hover:text-purple-300 rounded-xl transition border border-dark-border hover:border-purple-500/40 flex items-center justify-center active:scale-95 cursor-pointer relative"
+                title="NovaMind Image Studio: Change Car / Erase & Infill Objects"
+                aria-label="Open Image Studio & Inpaint Editor"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
+              </button>
+
+              <!-- AI Image Generation Button -->
+              <button
+                type="button"
+                id="openImageModalBtn"
+                class="p-2.5 bg-dark-base hover:bg-neutral-800 text-gray-300 hover:text-white rounded-xl transition border border-dark-border flex items-center justify-center active:scale-95 cursor-pointer relative"
+                title="Generate AI Image (/image)"
+                aria-label="Generate AI Image"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </button>
+
+              <!-- Web Speech Voice Record Button -->
+              <button
+                type="button"
+                id="recordVoiceBtn"
+                class="p-2.5 bg-dark-base hover:bg-neutral-800 text-gray-300 hover:text-white rounded-xl transition border border-dark-border flex items-center justify-center active:scale-95 cursor-pointer relative"
+                title="Record voice (speech to text)"
+                aria-label="Record voice input"
+              >
+                <svg id="micIcon" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+                <!-- Pulse badge when actively recording -->
+                <span id="recordingBadge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                </span>
+              </button>
+
+              <!-- Send / Stop Generation Button (ChatGPT-style) -->
+              <button
+                type="submit"
+                id="sendBtn"
+                class="p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition shadow-md shadow-brand-600/30 flex-shrink-0 active:scale-95 cursor-pointer flex items-center justify-center"
+                title="Send message"
+                aria-label="Send message"
+              >
+                <!-- Send Icon -->
+                <svg id="sendIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+                <!-- Stop Icon (shown during generation) -->
+                <div id="stopIcon" class="hidden w-3.5 h-3.5 bg-white rounded-sm"></div>
+              </button>
+            </div>
           </div>
 
           <!-- Quick Action Bar under input -->
@@ -296,9 +417,29 @@
               <span class="hidden sm:flex items-center gap-1">
                 <kbd class="px-1.5 py-0.5 bg-dark-surface border border-dark-border rounded text-[10px]">Enter</kbd> to send
               </span>
+              <!-- Voice recording live banner -->
+              <span id="voiceRecordingStatus" class="hidden items-center gap-1.5 text-rose-400 font-medium">
+                <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                Listening... Speak now
+              </span>
+              <!-- Quick Upload Action -->
+              <button type="button" id="quickUploadBtn" class="hover:text-white transition flex items-center gap-1 text-gray-300" title="Upload file or image">
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                <span>Upload</span>
+              </button>
+              <!-- Quick Image Studio Action -->
+              <button type="button" id="quickStudioBtn" class="hover:text-purple-400 transition flex items-center gap-1 text-gray-300" title="Edit / Inpaint Image">
+                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                <span>Image Studio</span>
+              </button>
+              <!-- Quick Image Gen Action -->
+              <button type="button" id="quickImageBtn" class="hover:text-purple-400 transition flex items-center gap-1 text-gray-300 hover:text-white" title="Generate AI Image">
+                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Generate</span>
+              </button>
               <button type="button" id="quickDownloadBtn" class="hover:text-brand-400 transition flex items-center gap-1.5 text-gray-300 hover:text-white" title="Download Conversation">
                 <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                <span>Download Conversation</span>
+                <span>Download</span>
               </button>
               <button type="button" id="clearChatBtn" class="hover:text-rose-400 transition flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -370,6 +511,18 @@
           placeholder="You are an expert AI software architect and helpful developer assistant..."
           class="w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"
         ></textarea>
+      </div>
+
+      <!-- App Developer & Creator Info Card -->
+      <div class="p-3 bg-dark-surface/60 border border-dark-border rounded-xl space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            Application Developer
+          </span>
+          <span class="text-[10px] bg-brand-500/20 text-brand-300 font-mono px-2 py-0.5 rounded-full border border-brand-500/30 font-semibold">PowerPlayExe</span>
+        </div>
+        <p class="text-[11px] text-gray-300">Created and designed by <strong class="text-white font-semibold">PowerPlayExe</strong>. Integrated with free Gemini models, high-speed free AI image generation, and native Android companion.</p>
       </div>
 
       <div class="pt-2 flex justify-end space-x-2">
@@ -504,6 +657,309 @@
     </div>
   </div>
 
+  <!-- AI Image Generator Modal -->
+  <div id="imageGenModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-dark-card border border-dark-border rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-base text-white flex items-center gap-1.5">
+              AI Image Generator
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 font-mono px-2 py-0.5 rounded-full border border-purple-500/30">100% Free</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Generate stunning images directly into your conversation</p>
+          </div>
+        </div>
+        <button id="closeImageGenBtn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-dark-surface" aria-label="Close image generator">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Form Content -->
+      <div class="space-y-3.5 overflow-y-auto pr-1">
+        <!-- Prompt Input -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="imagePromptInput" class="block text-xs font-semibold text-gray-300">Prompt Description</label>
+            <span class="text-[10px] text-gray-500">Be descriptive for best results</span>
+          </div>
+          <textarea
+            id="imagePromptInput"
+            rows="3"
+            placeholder="A cozy wooden cabin tucked in the snowy Alps at sunset, warm amber lights glowing from windows, cinematic, highly detailed..."
+            class="w-full bg-dark-surface border border-dark-border focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none resize-none transition"
+          ></textarea>
+        </div>
+
+        <!-- Style presets chips -->
+        <div class="space-y-1.5">
+          <span class="block text-[11px] font-medium text-gray-400">Quick Inspiration Presets:</span>
+          <div class="flex flex-wrap gap-1.5" id="presetChipsContainer">
+            <button type="button" class="preset-chip px-2.5 py-1 rounded-lg bg-dark-surface hover:bg-dark-border border border-dark-border text-[11px] text-gray-300 hover:text-white transition" data-text="Cyberpunk neon city with reflections on wet streets, cinematic photography">Cyberpunk</button>
+            <button type="button" class="preset-chip px-2.5 py-1 rounded-lg bg-dark-surface hover:bg-dark-border border border-dark-border text-[11px] text-gray-300 hover:text-white transition" data-text="Lush enchanted fantasy forest with glowing mystical flora, whimsical digital art">Fantasy Forest</button>
+            <button type="button" class="preset-chip px-2.5 py-1 rounded-lg bg-dark-surface hover:bg-dark-border border border-dark-border text-[11px] text-gray-300 hover:text-white transition" data-text="Cute 3D animated robotic companion in a minimalist studio, Pixar style">Cute 3D Robot</button>
+            <button type="button" class="preset-chip px-2.5 py-1 rounded-lg bg-dark-surface hover:bg-dark-border border border-dark-border text-[11px] text-gray-300 hover:text-white transition" data-text="Majestic mountain lake at dawn, crystal clear mirror reflection, photorealistic 8k">Alpine Sunrise</button>
+            <button type="button" class="preset-chip px-2.5 py-1 rounded-lg bg-dark-surface hover:bg-dark-border border border-dark-border text-[11px] text-gray-300 hover:text-white transition" data-text="Vibrant studio anime artwork, detailed character in city breeze, Makoto Shinkai style">Anime Style</button>
+          </div>
+        </div>
+
+        <!-- Aspect Ratio Selector -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold text-gray-300">Aspect Ratio</label>
+          <div class="grid grid-cols-4 gap-2" id="aspectRatioGroup">
+            <button type="button" data-ratio="1:1" class="ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-purple-500 bg-purple-500/15 text-purple-300 flex flex-col items-center justify-center transition">
+              <span class="w-4 h-4 rounded-sm border border-current mb-1 inline-block"></span>
+              <span>1:1</span>
+              <span class="text-[9px] text-gray-400 font-normal">Square</span>
+            </button>
+            <button type="button" data-ratio="16:9" class="ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-dark-border bg-dark-surface text-gray-300 hover:text-white hover:border-neutral-600 flex flex-col items-center justify-center transition">
+              <span class="w-5 h-3 rounded-sm border border-current mb-1.5 inline-block"></span>
+              <span>16:9</span>
+              <span class="text-[9px] text-gray-400 font-normal">Landscape</span>
+            </button>
+            <button type="button" data-ratio="9:16" class="ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-dark-border bg-dark-surface text-gray-300 hover:text-white hover:border-neutral-600 flex flex-col items-center justify-center transition">
+              <span class="w-3 h-5 rounded-sm border border-current mb-1.5 inline-block"></span>
+              <span>9:16</span>
+              <span class="text-[9px] text-gray-400 font-normal">Portrait</span>
+            </button>
+            <button type="button" data-ratio="4:3" class="ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-dark-border bg-dark-surface text-gray-300 hover:text-white hover:border-neutral-600 flex flex-col items-center justify-center transition">
+              <span class="w-4.5 h-3.5 rounded-sm border border-current mb-1.5 inline-block"></span>
+              <span>4:3</span>
+              <span class="text-[9px] text-gray-400 font-normal">Classic</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Generation status / notice -->
+        <div class="p-2.5 bg-dark-surface/80 rounded-xl border border-dark-border flex items-center justify-between text-[11px] text-gray-400">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span>Engine: High-Speed Free Neural Renderer</span>
+          </span>
+          <span class="text-[10px] text-purple-400 font-mono">Instant Free Tier</span>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="pt-3 border-t border-dark-border flex items-center justify-between">
+        <button id="closeImageGenBottomBtn" type="button" class="py-2 px-3 bg-dark-surface hover:bg-dark-border text-xs text-gray-300 rounded-xl transition">
+          Cancel
+        </button>
+        <button id="submitGenerateImageBtn" type="button" class="py-2.5 px-5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-medium transition shadow-md shadow-purple-600/30 flex items-center space-x-2 active:scale-95 disabled:opacity-50">
+          <svg id="generateIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span id="generateBtnText">Generate & Add to Chat</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NovaMind AI Image Studio & Inpaint Editor Modal -->
+  <div id="imageStudioModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+    <div class="bg-dark-card border border-dark-border rounded-2xl w-full max-w-4xl p-4 sm:p-5 space-y-4 shadow-2xl flex flex-col my-auto max-h-[95vh] overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-dark-border pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-600/25">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-base text-white flex items-center gap-2">
+              NovaMind Image Studio & Inpaint Editor
+              <span class="text-[10px] bg-purple-500/20 text-purple-300 font-mono px-2 py-0.5 rounded-full border border-purple-500/30">AI Magic Fill</span>
+            </h2>
+            <p class="text-[11px] text-gray-400">Brush over objects to remove & fill seamlessly, or replace cars and elements with AI</p>
+          </div>
+        </div>
+        <button id="closeStudioBtn" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-surface" aria-label="Close image studio">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Studio Work Area (Canvas + Controls) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Canvas Stage (Left 7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col space-y-2">
+          <!-- Toolbar over canvas -->
+          <div class="flex flex-wrap items-center justify-between gap-2 p-2 bg-dark-surface rounded-xl border border-dark-border text-xs">
+            <div class="flex items-center space-x-1.5">
+              <button type="button" id="studioBrushModeBtn" class="px-2.5 py-1.5 rounded-lg bg-purple-600 text-white font-medium flex items-center gap-1.5 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                <span>Brush</span>
+              </button>
+              <button type="button" id="studioEraserModeBtn" class="px-2.5 py-1.5 rounded-lg bg-dark-base hover:bg-neutral-800 text-gray-300 font-medium flex items-center gap-1.5 transition border border-dark-border cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Eraser</span>
+              </button>
+              <button type="button" id="studioClearMaskBtn" class="px-2 py-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-950/20 transition cursor-pointer" title="Clear drawn mask">
+                Clear Mask
+              </button>
+            </div>
+            <!-- Brush size slider -->
+            <div class="flex items-center space-x-2">
+              <span class="text-[11px] text-gray-400">Size:</span>
+              <input type="range" id="studioBrushSize" min="8" max="80" value="30" class="w-20 accent-purple-500 cursor-pointer" />
+              <span id="brushSizeVal" class="text-[11px] font-mono text-purple-400 w-6">30px</span>
+            </div>
+          </div>
+
+          <!-- Canvas Interactive Viewport -->
+          <div id="studioCanvasContainer" class="relative w-full aspect-[4/3] bg-neutral-950 rounded-xl overflow-hidden border border-dark-border flex items-center justify-center select-none cursor-crosshair">
+            <canvas id="studioImageCanvas" class="absolute inset-0 w-full h-full object-contain pointer-events-none"></canvas>
+            <canvas id="studioMaskCanvas" class="absolute inset-0 w-full h-full object-contain"></canvas>
+            <!-- Cursor Preview Ring -->
+            <div id="studioBrushCursor" class="pointer-events-none hidden absolute rounded-full border border-purple-400 bg-purple-500/20 transform -translate-x-1/2 -translate-y-1/2 z-20"></div>
+            <!-- Empty state placeholder if no image loaded yet -->
+            <div id="studioEmptyState" class="hidden flex flex-col items-center justify-center p-6 text-center z-10 pointer-events-none">
+              <svg class="w-12 h-12 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <p class="text-xs text-gray-400">No image loaded. Upload a photo or try with a sample car photo below.</p>
+            </div>
+          </div>
+
+          <!-- Quick Image Load Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+            <div class="flex items-center space-x-2">
+              <label class="px-3 py-1.5 bg-dark-surface hover:bg-dark-border text-gray-200 hover:text-white rounded-lg border border-dark-border cursor-pointer flex items-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Upload Photo</span>
+                <input type="file" id="studioUploadInput" accept="image/*" class="hidden" />
+              </label>
+              <button type="button" id="loadSampleCarBtn" class="px-3 py-1.5 bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 rounded-lg border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer" title="Load sample car photo for quick testing">
+                <span>🚗 Try Sample Car Photo</span>
+              </button>
+            </div>
+            <button type="button" id="resetStudioImageBtn" class="text-gray-400 hover:text-white transition text-[11px] cursor-pointer">
+              Reset Original
+            </button>
+          </div>
+        </div>
+
+        <!-- Tool Actions & Options (Right 5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col space-y-3 justify-between bg-dark-surface/60 p-3.5 rounded-xl border border-dark-border">
+          <!-- Action Mode Tabs -->
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-1.5 p-1 bg-dark-base rounded-xl border border-dark-border">
+              <button type="button" id="tabReplaceCarBtn" class="py-2 px-2 text-xs font-semibold rounded-lg bg-purple-600 text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <span>🚗 Change Car / Object</span>
+              </button>
+              <button type="button" id="tabRemoveInfillBtn" class="py-2 px-2 text-xs font-medium rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <span>🪄 Magic Erase & Fill</span>
+              </button>
+            </div>
+
+            <!-- Tab Content: Replace Object / Car -->
+            <div id="sectionReplaceObject" class="space-y-2.5">
+              <div class="space-y-1">
+                <label for="replaceObjectPrompt" class="block text-xs font-semibold text-gray-200">
+                  Target Replacement (e.g. Change Car)
+                </label>
+                <p class="text-[11px] text-gray-400">Brush over the car/object on the left canvas, then describe what will replace it.</p>
+                <textarea
+                  id="replaceObjectPrompt"
+                  rows="2"
+                  placeholder="e.g. A sleek aerodynamic red Ferrari SF90 sports car with metallic shine and road reflections..."
+                  class="w-full bg-dark-base border border-dark-border focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none resize-none transition"
+                ></textarea>
+              </div>
+
+              <!-- Quick car suggestions -->
+              <div class="space-y-1">
+                <span class="text-[10px] text-gray-400 block font-medium">Car & Object Presets:</span>
+                <div class="flex flex-wrap gap-1">
+                  <button type="button" class="studio-preset-chip px-2 py-0.5 rounded-md bg-dark-base border border-dark-border text-[10px] text-purple-300 hover:bg-purple-950/40 hover:border-purple-500/40 transition cursor-pointer" data-prompt="A sleek red Ferrari sports car parked with gleaming reflections">🏎️ Red Ferrari</button>
+                  <button type="button" class="studio-preset-chip px-2 py-0.5 rounded-md bg-dark-base border border-dark-border text-[10px] text-purple-300 hover:bg-purple-950/40 hover:border-purple-500/40 transition cursor-pointer" data-prompt="A vintage 1968 classic Mustang muscle car in cherry red with chrome wheels">🚗 Classic '68 Mustang</button>
+                  <button type="button" class="studio-preset-chip px-2 py-0.5 rounded-md bg-dark-base border border-dark-border text-[10px] text-purple-300 hover:bg-purple-950/40 hover:border-purple-500/40 transition cursor-pointer" data-prompt="A futuristic Cyberpunk neon hypercar with glowing cybernetic accents">⚡ Cyberpunk Hypercar</button>
+                  <button type="button" class="studio-preset-chip px-2 py-0.5 rounded-md bg-dark-base border border-dark-border text-[10px] text-purple-300 hover:bg-purple-950/40 hover:border-purple-500/40 transition cursor-pointer" data-prompt="A modern matte black luxury off-road SUV with tinted windows">🚙 Matte Black SUV</button>
+                </div>
+              </div>
+
+              <button type="button" id="executeReplaceObjectBtn" class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-2 active:scale-95 transition cursor-pointer">
+                <svg id="replaceCarIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                <span id="replaceCarBtnText">Transform & Replace Object</span>
+              </button>
+            </div>
+
+            <!-- Tab Content: Magic Erase & Infill Object -->
+            <div id="sectionRemoveInfill" class="hidden space-y-2.5">
+              <div class="space-y-1">
+                <span class="block text-xs font-semibold text-gray-200">Magic Erase & Infill</span>
+                <p class="text-[11px] text-gray-300 leading-relaxed">
+                  Brush over the car or any unwanted object. NovaMind's Content-Aware Infill engine analyzes surrounding boundary pixels and reconstructs the road/background scenery seamlessly.
+                </p>
+              </div>
+
+              <div class="p-2.5 bg-dark-base/80 rounded-xl border border-dark-border text-[11px] space-y-1 text-gray-400">
+                <div class="flex items-center gap-1.5 text-emerald-400 font-medium">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  <span>Instant Boundary Inpainting</span>
+                </div>
+                <p>Erase unwanted objects with instant background infilling.</p>
+              </div>
+
+              <button type="button" id="executeRemoveInfillBtn" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 active:scale-95 transition cursor-pointer">
+                <svg id="removeInfillIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <span id="removeInfillBtnText">Magic Erase & Infill Background</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Result Actions & Before/After toggle -->
+          <div class="pt-3 border-t border-dark-border space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <button type="button" id="studioCompareToggleBtn" class="text-gray-400 hover:text-purple-300 transition flex items-center gap-1 text-[11px] cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span id="compareToggleLabel">Showing Result (Click for Original)</span>
+              </button>
+              <span id="studioStatusLabel" class="text-[10px] text-gray-500 font-mono">Ready</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="studioDownloadBtn" class="py-2 px-3 bg-dark-surface hover:bg-dark-border border border-dark-border text-gray-300 hover:text-white rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5 active:scale-95 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Save Image</span>
+              </button>
+              <button type="button" id="studioInsertChatBtn" class="py-2 px-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium transition shadow-md shadow-brand-600/25 flex items-center justify-center space-x-1.5 active:scale-95 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Insert to Chat</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal for Full View -->
+  <div id="imageLightboxModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50 select-none">
+    <div class="w-full max-w-4xl flex items-center justify-between mb-3 px-2">
+      <div class="truncate max-w-[80%]">
+        <span id="lightboxPromptText" class="text-xs sm:text-sm text-gray-200 font-medium truncate block">AI Generated Image</span>
+        <span class="text-[10px] text-purple-400 font-mono">High Resolution Preview</span>
+      </div>
+      <div class="flex items-center space-x-2 flex-shrink-0">
+        <button id="lightboxDownloadBtn" class="flex items-center space-x-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded-xl transition active:scale-95 shadow">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>Download</span>
+        </button>
+        <button id="closeLightboxBtn" class="p-2 text-gray-400 hover:text-white rounded-xl bg-dark-card hover:bg-dark-surface border border-dark-border transition" aria-label="Close fullscreen preview">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div class="max-w-4xl max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl border border-neutral-800 bg-black shadow-2xl p-1">
+      <img id="lightboxImageEl" src="" alt="AI generated preview" class="max-w-full max-h-[78vh] object-contain rounded-xl" />
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toastNotification" class="fixed bottom-16 right-4 sm:bottom-6 sm:right-6 z-50 pointer-events-none transition-all duration-300 transform translate-y-4 opacity-0">
     <div class="bg-brand-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-medium border border-brand-400/30">
@@ -522,7 +978,13 @@
     let currentModel = storedModel;
 
     let openRouterKey = localStorage.getItem('openrouter_key') || '';
-    let systemPersona = localStorage.getItem('system_persona') || 'You are an intelligent, helpful AI assistant built with precision and clarity.';
+    const DEFAULT_DEVELOPER_PERSONA = 'You are an intelligent, helpful AI assistant running inside the AI Chatbot application created and developed by PowerPlayExe. If asked who made, created, or developed this app or who your creator is, state clearly and accurately that the app was created and developed by PowerPlayExe.';
+    let storedPersona = localStorage.getItem('system_persona');
+    if (!storedPersona || !storedPersona.includes('PowerPlayExe')) {
+      storedPersona = DEFAULT_DEVELOPER_PERSONA;
+      localStorage.setItem('system_persona', storedPersona);
+    }
+    let systemPersona = storedPersona;
     let sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
     let currentSessionId = localStorage.getItem('current_session_id') || null;
 
@@ -534,7 +996,7 @@
         messages: [
           {
             role: 'assistant',
-            content: "Hello! I am your AI Chatbot companion. You can chat with me directly, configure OpenRouter API keys in Settings, switch models on the top bar, download conversations as Markdown or JSON, or download the compiled Android APK from the sidebar.",
+            content: "Hello! I am your AI Chatbot companion, created and developed by **PowerPlayExe**. You can chat with me directly, generate AI images (/image or click the image button), switch models on the top bar, download conversations as Markdown/JSON, or download the compiled Android APK from the sidebar.",
             timestamp: Date.now()
           }
         ]
@@ -646,6 +1108,7 @@
       let md = `# ${session.title || 'Conversation'}\n\n`;
       md += `* **Export Date:** ${new Date().toLocaleString()}\n`;
       md += `* **Model:** ${session.model || currentModel}\n`;
+      md += `* **Application:** AI Chatbot (Created by PowerPlayExe)\n`;
       md += `* **Messages:** ${(session.messages || []).length}\n\n`;
       md += `---\n\n`;
 
@@ -654,7 +1117,15 @@
         const roleLabel = isUser ? '🧑 User' : '🤖 Assistant';
         const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
         md += `### ${roleLabel}${timeStr ? ` · ${timeStr}` : ''}\n\n`;
-        md += `${msg.content}\n\n`;
+        if (msg.type === 'image' || msg.image) {
+          const imgUrl = msg.image?.url || msg.imageUrl || '';
+          const imgPrompt = msg.image?.prompt || msg.prompt || 'AI Generated Image';
+          const ratio = msg.image?.aspectRatio || '1:1';
+          md += `![${imgPrompt}](${imgUrl})\n\n`;
+          md += `*Prompt:* \`${imgPrompt}\` (Aspect Ratio: ${ratio})\n\n`;
+        } else {
+          md += `${msg.content}\n\n`;
+        }
       });
       return md;
     }
@@ -662,6 +1133,7 @@
     function generateJson(session) {
       const payload = {
         app: "AI Chatbot",
+        creator: "PowerPlayExe",
         version: "1.0",
         exportedAt: new Date().toISOString(),
         session: {
@@ -1010,46 +1482,98 @@
     function formatMessageContent(text) {
       if (!text) return '';
       const codeBlocks = [];
+      const imageSlots = [];
 
-      // 1. Extract code blocks so formatting and newlines remain pristine
-      let parsed = text.replace(/```([a-zA-Z0-9_\-+#.]*)\r?\n?([\s\S]*?)```/g, (m, lang, code) => {
-        const placeholder = `___CODE_BLOCK_SLOT_${codeBlocks.length}___`;
-        const cleanLang = (lang || '').trim().toLowerCase() || 'code';
-        const cleanCode = code.replace(/^\r?\n+|\r?\n+$/g, '');
-        codeBlocks.push({
-          lang: cleanLang,
-          code: escapeHtml(cleanCode)
+      // 1. Extract markdown images ![alt](src)
+      let parsed = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) => {
+        const placeholder = `___IMAGE_SLOT_${imageSlots.length}___`;
+        imageSlots.push({
+          alt: (alt || 'AI Generated Image').trim(),
+          src: src.trim()
         });
         return placeholder;
       });
 
-      // 2. Escape HTML for regular text
+      // 2. Extract code blocks so formatting and newlines remain pristine
+      parsed = parsed.replace(/```([a-zA-Z0-9_\-+#.]*)\r?\n?([\s\S]*?)(?:```|$)/g, (m, lang, code) => {
+        const placeholder = `___CODE_BLOCK_SLOT_${codeBlocks.length}___`;
+        const cleanLang = (lang || '').trim().toLowerCase() || 'code';
+        const cleanCode = code.replace(/^\r?\n+|\r?\n+$/g, '');
+        const lines = cleanCode ? cleanCode.split('\n') : [''];
+        const lineCount = lines.length;
+        codeBlocks.push({
+          lang: cleanLang,
+          code: escapeHtml(cleanCode),
+          lineCount: lineCount,
+          isLong: lineCount > 10
+        });
+        return placeholder;
+      });
+
+      // 3. Escape HTML for regular text
       parsed = escapeHtml(parsed);
 
-      // 3. Inline code with black background and crisp white text
+      // 4. Inline code with black background and crisp white text
       parsed = parsed.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-black text-white font-mono text-[11px] rounded border border-neutral-800">$1</code>');
 
-      // 4. Basic formatting for bold and line breaks
+      // 5. Basic formatting for bold and line breaks
       parsed = parsed.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
       parsed = parsed.replace(/\n/g, '<br/>');
 
-      // 5. Restore ChatGPT-style pitch-black code blocks with header & copy button
-      codeBlocks.forEach((item, index) => {
-        const blockHtml = `
-          <div class="code-block-container my-3 rounded-xl overflow-hidden bg-black border border-neutral-800 shadow-xl max-w-full">
-            <div class="flex items-center justify-between px-3.5 py-2 bg-[#171717] border-b border-neutral-800 select-none">
-              <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-neutral-600 inline-block"></span>
-                <span class="text-[11px] font-mono font-medium text-neutral-400 uppercase tracking-wider">${item.lang}</span>
-              </div>
-              <button type="button" class="copy-code-btn flex items-center space-x-1.5 text-neutral-300 hover:text-white text-xs px-2.5 py-1 rounded-md hover:bg-neutral-800 active:scale-95 transition cursor-pointer" title="Copy code" aria-label="Copy snippet">
-                <span class="copy-icon flex items-center">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                </span>
-                <span class="copy-label text-[11px] font-sans font-medium">Copy code</span>
+      // 6. Restore markdown images
+      imageSlots.forEach((item, index) => {
+        const safeSrc = escapeHtml(item.src);
+        const safeAlt = escapeHtml(item.alt);
+        const imgHtml = `
+          <div class="my-3 rounded-xl overflow-hidden bg-black border border-dark-border shadow-lg max-w-sm sm:max-w-md">
+            <img src="${safeSrc}" alt="${safeAlt}" referrerPolicy="no-referrer" class="w-full h-auto object-cover max-h-80 cursor-pointer transition hover:opacity-95" onclick="openLightbox('${safeSrc}', '${safeAlt}')" />
+            <div class="p-2.5 flex items-center justify-between bg-[#141414] border-t border-neutral-800 text-[11px] text-gray-300">
+              <span class="truncate pr-2 italic">${safeAlt}</span>
+              <button type="button" class="download-img-btn p-1.5 hover:text-white rounded-lg text-gray-400 hover:bg-dark-surface transition" data-url="${safeSrc}" data-prompt="${safeAlt}" title="Download image">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
               </button>
             </div>
-            <pre class="m-0 p-3.5 sm:p-4 bg-black text-white font-mono text-xs leading-relaxed overflow-x-auto selection:bg-neutral-800 selection:text-white"><code class="block font-mono text-white whitespace-pre">${item.code}</code></pre>
+          </div>
+        `.trim();
+        parsed = parsed.replace(`___IMAGE_SLOT_${index}___`, imgHtml);
+      });
+
+      // 7. Restore ChatGPT-style pitch-black collapsible code blocks with header, fold toggle & copy button
+      codeBlocks.forEach((item, index) => {
+        const blockHtml = `
+          <div class="code-block-container my-3 rounded-xl overflow-hidden bg-black border border-neutral-800 shadow-xl max-w-full group" data-folded="false">
+            <div class="code-block-header flex items-center justify-between px-3.5 py-2 bg-[#171717] border-b border-neutral-800 select-none cursor-pointer hover:bg-[#1f1f1f] transition-colors" title="Click header to collapse or expand code snippet">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-neutral-500 group-hover:bg-brand-400 transition-colors inline-block"></span>
+                <span class="text-[11px] font-mono font-medium text-neutral-400 uppercase tracking-wider">${item.lang}</span>
+                <span class="code-lines-badge text-[10px] font-mono px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700/60">${item.lineCount} ${item.lineCount === 1 ? 'line' : 'lines'}</span>
+              </div>
+              <div class="flex items-center space-x-1 sm:space-x-1.5" onclick="event.stopPropagation()">
+                <button type="button" class="fold-code-btn flex items-center space-x-1 text-neutral-400 hover:text-white text-xs px-2 py-1 rounded-md hover:bg-neutral-800 active:scale-95 transition cursor-pointer" title="Fold / Expand code snippet" aria-label="Toggle code fold">
+                  <svg class="fold-icon w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                  <span class="fold-label text-[11px] font-sans font-medium">Collapse</span>
+                </button>
+                <button type="button" class="copy-code-btn flex items-center space-x-1.5 text-neutral-300 hover:text-white text-xs px-2.5 py-1 rounded-md hover:bg-neutral-800 active:scale-95 transition cursor-pointer" title="Copy code" aria-label="Copy snippet">
+                  <span class="copy-icon flex items-center">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  </span>
+                  <span class="copy-label text-[11px] font-sans font-medium">Copy code</span>
+                </button>
+              </div>
+            </div>
+            <pre class="code-pre m-0 p-3.5 sm:p-4 bg-black text-white font-mono text-xs leading-relaxed overflow-x-auto selection:bg-neutral-800 selection:text-white transition-all duration-150"><code class="block font-mono text-white whitespace-pre">${item.code}</code></pre>
+            <div class="code-collapsed-banner hidden px-3.5 py-2 bg-[#121212] border-t border-neutral-800/80 text-[11px] text-neutral-400 items-center justify-between cursor-pointer hover:bg-neutral-900 transition select-none">
+              <span class="flex items-center space-x-2 text-neutral-400">
+                <svg class="w-3.5 h-3.5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                <span>${item.lineCount} ${item.lineCount === 1 ? 'line' : 'lines'} hidden (collapsed)</span>
+              </span>
+              <span class="text-brand-400 font-medium hover:text-brand-300 flex items-center gap-1">
+                <span>Expand code</span>
+                <svg class="w-3.5 h-3.5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </span>
+            </div>
           </div>
         `.trim();
         parsed = parsed.replace(`___CODE_BLOCK_SLOT_${index}___`, blockHtml);
@@ -1058,7 +1582,45 @@
       return parsed;
     }
 
-    function renderMessages() {
+    function scrollToLatestMessage(options = {}) {
+      if (!chatScrollArea) return;
+      const smooth = options.smooth !== false;
+
+      const performScroll = () => {
+        const lastEl = chatScrollArea.lastElementChild;
+        if (lastEl) {
+          try {
+            lastEl.scrollIntoView({
+              behavior: smooth ? 'smooth' : 'auto',
+              block: 'end',
+              inline: 'nearest'
+            });
+          } catch (e) {
+            chatScrollArea.scrollTop = chatScrollArea.scrollHeight;
+          }
+        }
+
+        if (smooth && typeof chatScrollArea.scrollTo === 'function') {
+          chatScrollArea.scrollTo({
+            top: chatScrollArea.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          chatScrollArea.scrollTop = chatScrollArea.scrollHeight;
+        }
+      };
+
+      // Tick 1: Immediately in the next animation frame
+      requestAnimationFrame(performScroll);
+
+      // Tick 2: After microtasks and DOM reflow
+      setTimeout(performScroll, 50);
+
+      // Tick 3: After multiline code blocks and typography finish rendering
+      setTimeout(performScroll, 180);
+    }
+
+    function renderMessages(options = {}) {
       const sess = getCurrentSession();
       chatScrollArea.innerHTML = '';
 
@@ -1067,9 +1629,94 @@
         const el = document.createElement('div');
         el.className = 'flex flex-col space-y-1 ' + (isUser ? 'items-end' : 'items-start');
 
+        let innerContentHtml = '';
+
+        if (msg.type === 'image' || msg.image) {
+          const imgUrl = msg.image?.url || msg.imageUrl || '';
+          const imgPrompt = msg.image?.prompt || msg.prompt || 'AI Generated Image';
+          const ratio = msg.image?.aspectRatio || '1:1';
+          const safeUrl = escapeHtml(imgUrl);
+          const safePrompt = escapeHtml(imgPrompt);
+
+          innerContentHtml = `
+            <div class="space-y-2 max-w-sm sm:max-w-md w-full">
+              <div class="relative group rounded-xl overflow-hidden bg-black border border-dark-border shadow-xl">
+                <img
+                  src="${safeUrl}"
+                  alt="${safePrompt}"
+                  referrerPolicy="no-referrer"
+                  class="w-full h-auto object-cover max-h-96 rounded-xl transition duration-200 cursor-pointer group-hover:opacity-95"
+                  onclick="openLightbox('${safeUrl}', '${safePrompt}')"
+                />
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
+                  <span class="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur text-white text-xs font-medium flex items-center gap-1.5 border border-white/20 shadow-lg">
+                    <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"></path></svg>
+                    <span>Click to Zoom</span>
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 px-1 text-xs">
+                <div class="truncate text-[11px] text-gray-300 italic" title="${safePrompt}">
+                  "${safePrompt}"
+                </div>
+                <div class="flex items-center space-x-1.5 flex-shrink-0">
+                  <span class="px-1.5 py-0.5 bg-purple-500/15 text-purple-400 font-mono text-[10px] rounded border border-purple-500/25">${escapeHtml(ratio)}</span>
+                  <button type="button" class="edit-in-studio-btn p-1 text-purple-400 hover:text-purple-300 rounded-md hover:bg-dark-surface transition" data-url="${safeUrl}" title="Edit in NovaMind Studio (Replace Car / Inpaint)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                  </button>
+                  <button type="button" class="download-img-btn p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-surface transition" data-url="${safeUrl}" data-prompt="${safePrompt}" title="Download image">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  </button>
+                  <button type="button" class="copy-prompt-btn p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-surface transition" data-prompt="${safePrompt}" title="Copy prompt">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (msg.isTyping) {
+          innerContentHtml = `
+            <div class="flex items-center space-x-2 py-0.5 text-brand-400 font-medium">
+              <span class="w-2 h-2 rounded-full bg-brand-400 animate-ping"></span>
+              <span>${escapeHtml(msg.content || 'Thinking...')}</span>
+            </div>
+          `;
+        } else if (msg.isStreaming) {
+          const formatted = formatMessageContent(msg.content || '');
+          innerContentHtml = `
+            <div class="chatgpt-stream-content inline">${formatted}</div><span class="chatgpt-cursor inline-block w-1.5 h-3.5 bg-brand-400 ml-1 translate-y-0.5 animate-pulse"></span>
+          `;
+        } else {
+          let attachmentHeaderHtml = '';
+          if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+            attachmentHeaderHtml = '<div class="flex flex-wrap gap-2 mb-2">';
+            for (const att of msg.attachments) {
+              if (att.type === 'image') {
+                attachmentHeaderHtml += `
+                  <div class="relative group rounded-lg overflow-hidden border border-white/20 bg-black/40 w-24 h-24 flex-shrink-0">
+                    <img src="${att.data}" alt="${escapeHtml(att.name)}" class="w-full h-full object-cover cursor-pointer" onclick="openLightbox('${att.data}', '${escapeHtml(att.name)}')" />
+                    <button type="button" class="edit-in-studio-btn absolute bottom-1 right-1 p-1 bg-purple-600/90 hover:bg-purple-500 text-white rounded text-[10px] shadow" data-url="${att.data}" title="Edit in NovaMind Image Studio">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
+                  </div>
+                `;
+              } else {
+                attachmentHeaderHtml += `
+                  <div class="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/20 text-[11px] text-white">
+                    <svg class="w-3.5 h-3.5 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="truncate max-w-[140px]">${escapeHtml(att.name)}</span>
+                  </div>
+                `;
+              }
+            }
+            attachmentHeaderHtml += '</div>';
+          }
+          innerContentHtml = attachmentHeaderHtml + formatMessageContent(msg.content);
+        }
+
         el.innerHTML = `
           <div class="flex items-center space-x-1.5 px-1 text-[11px] text-gray-500 font-medium">
-            <span>${isUser ? 'You' : 'Assistant'}</span>
+            <span>${isUser ? 'You' : 'NovaMind'}</span>
             <span>·</span>
             <span>${new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
@@ -1078,79 +1725,1348 @@
               ? 'bg-brand-600 text-white rounded-tr-sm shadow-md shadow-brand-600/20'
               : 'bg-dark-card border border-dark-border text-gray-200 rounded-tl-sm shadow-sm'
           }">
-            ${formatMessageContent(msg.content)}
+            ${innerContentHtml}
           </div>
         `;
         chatScrollArea.appendChild(el);
       });
 
-      chatScrollArea.scrollTop = chatScrollArea.scrollHeight;
+      // Update visibility of the Fold All Code button based on whether code blocks exist in conversation
+      const toggleAllCodeBtn = document.getElementById('toggleAllCodeBtn');
+      if (toggleAllCodeBtn) {
+        const totalCodeBlocks = chatScrollArea.querySelectorAll('.code-block-container').length;
+        if (totalCodeBlocks > 0) {
+          toggleAllCodeBtn.classList.remove('hidden');
+          toggleAllCodeBtn.classList.add('flex');
+        } else {
+          toggleAllCodeBtn.classList.add('hidden');
+          toggleAllCodeBtn.classList.remove('flex');
+        }
+      }
+
+      const shouldScroll = options.autoScroll !== false;
+      if (shouldScroll) {
+        scrollToLatestMessage({ smooth: options.smooth === true });
+      }
     }
 
-    // Global delegated click listener for copy-code buttons in chat
-    chatScrollArea?.addEventListener('click', async (e) => {
-      const copyBtn = e.target.closest('.copy-code-btn');
-      if (!copyBtn) return;
-      
-      const container = copyBtn.closest('.code-block-container');
-      const codeEl = container?.querySelector('code');
-      if (!codeEl) return;
-      
-      const textToCopy = codeEl.innerText;
-      let success = false;
+    // ==========================================
+    // CODE FOLDING ENGINE
+    // ==========================================
+    function toggleCodeBlockFold(container, forceFold) {
+      if (!container) return;
+      const preEl = container.querySelector('.code-pre');
+      const bannerEl = container.querySelector('.code-collapsed-banner');
+      const foldBtn = container.querySelector('.fold-code-btn');
+      const foldLabel = foldBtn?.querySelector('.fold-label');
+      const foldIcon = foldBtn?.querySelector('.fold-icon');
 
-      if (navigator.clipboard && window.isSecureContext) {
-        try {
-          await navigator.clipboard.writeText(textToCopy);
-          success = true;
-        } catch (err) {
-          // fallback below
-        }
-      }
+      const isCurrentlyFolded = container.getAttribute('data-folded') === 'true' || preEl?.classList.contains('hidden');
+      const shouldFold = forceFold !== undefined ? forceFold : !isCurrentlyFolded;
 
-      if (!success) {
-        try {
-          const textarea = document.createElement('textarea');
-          textarea.value = textToCopy;
-          textarea.style.position = 'fixed';
-          textarea.style.left = '-9999px';
-          textarea.style.top = '0';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.focus();
-          textarea.select();
-          success = document.execCommand('copy');
-          document.body.removeChild(textarea);
-        } catch (err) {
-          success = false;
-        }
-      }
-
-      const copyLabel = copyBtn.querySelector('.copy-label');
-      const copyIcon = copyBtn.querySelector('.copy-icon');
-
-      if (success) {
-        if (copyLabel) {
-          copyLabel.textContent = 'Copied!';
-          copyLabel.className = 'copy-label text-[11px] font-sans font-semibold text-emerald-400';
-        }
-        if (copyIcon) {
-          copyIcon.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-        }
-        showToast('Snippet copied to clipboard');
-        setTimeout(() => {
-          if (copyLabel) {
-            copyLabel.textContent = 'Copy code';
-            copyLabel.className = 'copy-label text-[11px] font-sans font-medium';
-          }
-          if (copyIcon) {
-            copyIcon.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>';
-          }
-        }, 2000);
+      if (!shouldFold) {
+        // Expand code block
+        preEl?.classList.remove('hidden');
+        bannerEl?.classList.add('hidden');
+        bannerEl?.classList.remove('flex');
+        container.setAttribute('data-folded', 'false');
+        if (foldLabel) foldLabel.textContent = 'Collapse';
+        if (foldIcon) foldIcon.classList.remove('rotate-180');
+        foldBtn?.setAttribute('title', 'Collapse code snippet');
       } else {
-        showToast('Unable to copy snippet');
+        // Collapse code block
+        preEl?.classList.add('hidden');
+        bannerEl?.classList.remove('hidden');
+        bannerEl?.classList.add('flex');
+        container.setAttribute('data-folded', 'true');
+        if (foldLabel) foldLabel.textContent = 'Expand';
+        if (foldIcon) foldIcon.classList.add('rotate-180');
+        foldBtn?.setAttribute('title', 'Expand code snippet');
+      }
+    }
+
+    // Toggle All Code button click handler
+    const toggleAllCodeBtn = document.getElementById('toggleAllCodeBtn');
+    const toggleAllCodeLabel = document.getElementById('toggleAllCodeLabel');
+    let allCodeFolded = false;
+
+    toggleAllCodeBtn?.addEventListener('click', () => {
+      const allContainers = chatScrollArea?.querySelectorAll('.code-block-container') || [];
+      if (allContainers.length === 0) return;
+
+      allCodeFolded = !allCodeFolded;
+      allContainers.forEach(container => {
+        toggleCodeBlockFold(container, allCodeFolded);
+      });
+
+      if (toggleAllCodeLabel) {
+        toggleAllCodeLabel.textContent = allCodeFolded ? 'Expand Code' : 'Fold Code';
+      }
+      showToast(allCodeFolded ? 'All code snippets collapsed' : 'All code snippets expanded');
+    });
+
+    // Floating Jump to Latest Message button logic
+    const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
+    chatScrollArea?.addEventListener('scroll', () => {
+      if (!scrollToBottomBtn) return;
+      const distanceFromBottom = chatScrollArea.scrollHeight - chatScrollArea.scrollTop - chatScrollArea.clientHeight;
+      if (distanceFromBottom > 120) {
+        scrollToBottomBtn.classList.remove('hidden');
+        scrollToBottomBtn.classList.add('flex');
+      } else {
+        scrollToBottomBtn.classList.add('hidden');
+        scrollToBottomBtn.classList.remove('flex');
       }
     });
+
+    scrollToBottomBtn?.addEventListener('click', () => {
+      scrollToLatestMessage({ smooth: true });
+      scrollToBottomBtn.classList.add('hidden');
+      scrollToBottomBtn.classList.remove('flex');
+    });
+
+    // Global delegated click listener for code interactions (Copy code, Fold/Collapse, Expand banner)
+    chatScrollArea?.addEventListener('click', async (e) => {
+      // 1. Copy code button click
+      const copyBtn = e.target.closest('.copy-code-btn');
+      if (copyBtn) {
+        e.stopPropagation();
+        const container = copyBtn.closest('.code-block-container');
+        const codeEl = container?.querySelector('code');
+        if (!codeEl) return;
+        
+        const textToCopy = codeEl.innerText;
+        let success = false;
+
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            success = true;
+          } catch (err) {
+            // fallback below
+          }
+        }
+
+        if (!success) {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = textToCopy;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+          } catch (err) {
+            success = false;
+          }
+        }
+
+        const copyLabel = copyBtn.querySelector('.copy-label');
+        const copyIcon = copyBtn.querySelector('.copy-icon');
+
+        if (success) {
+          if (copyLabel) {
+            copyLabel.textContent = 'Copied!';
+            copyLabel.className = 'copy-label text-[11px] font-sans font-semibold text-emerald-400';
+          }
+          if (copyIcon) {
+            copyIcon.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+          }
+          showToast('Snippet copied to clipboard');
+          setTimeout(() => {
+            if (copyLabel) {
+              copyLabel.textContent = 'Copy code';
+              copyLabel.className = 'copy-label text-[11px] font-sans font-medium';
+            }
+            if (copyIcon) {
+              copyIcon.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>';
+            }
+          }, 2000);
+        } else {
+          showToast('Unable to copy snippet');
+        }
+        return;
+      }
+
+      // 2. Fold / Collapse code button click
+      const foldBtn = e.target.closest('.fold-code-btn');
+      if (foldBtn) {
+        e.stopPropagation();
+        const container = foldBtn.closest('.code-block-container');
+        toggleCodeBlockFold(container);
+        return;
+      }
+
+      // 3. Collapsed code banner click (click to expand)
+      const bannerEl = e.target.closest('.code-collapsed-banner');
+      if (bannerEl) {
+        e.stopPropagation();
+        const container = bannerEl.closest('.code-block-container');
+        toggleCodeBlockFold(container, false); // force expand
+        return;
+      }
+
+      // 4. Code block header click (toggle fold when clicking anywhere on header, except button actions)
+      const headerEl = e.target.closest('.code-block-header');
+      if (headerEl && !e.target.closest('button')) {
+        const container = headerEl.closest('.code-block-container');
+        toggleCodeBlockFold(container);
+        return;
+      }
+    });
+
+    // Delegated click listener for image card download and copy-prompt buttons
+    chatScrollArea?.addEventListener('click', (e) => {
+      const downloadImgBtn = e.target.closest('.download-img-btn');
+      if (downloadImgBtn) {
+        const url = downloadImgBtn.getAttribute('data-url');
+        const prompt = downloadImgBtn.getAttribute('data-prompt') || 'ai-generated-image';
+        if (url) {
+          const cleanSlug = prompt.slice(0, 24).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          downloadImageFile(url, `ai-image-${cleanSlug}-${Date.now()}.jpg`);
+        }
+        return;
+      }
+
+      const copyPromptBtn = e.target.closest('.copy-prompt-btn');
+      if (copyPromptBtn) {
+        const promptText = copyPromptBtn.getAttribute('data-prompt');
+        if (promptText) {
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(promptText).then(() => {
+              showToast('Prompt copied to clipboard');
+            }).catch(() => {
+              showToast('Failed to copy prompt');
+            });
+          } else {
+            showToast('Copied: ' + promptText.slice(0, 30));
+          }
+        }
+        return;
+      }
+    });
+
+    // Web Speech API Voice Dictation (Record)
+    const recordVoiceBtn = document.getElementById('recordVoiceBtn');
+    const micIcon = document.getElementById('micIcon');
+    const recordingBadge = document.getElementById('recordingBadge');
+    const voiceRecordingStatus = document.getElementById('voiceRecordingStatus');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isRecording = false;
+    let initialTextBeforeRecording = '';
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      recognition.onstart = () => {
+        isRecording = true;
+        initialTextBeforeRecording = messageInput.value;
+        recordVoiceBtn?.classList.remove('bg-dark-base', 'text-gray-300', 'hover:bg-neutral-800', 'border-dark-border');
+        recordVoiceBtn?.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-lg', 'shadow-rose-600/40');
+        recordingBadge?.classList.remove('hidden');
+        voiceRecordingStatus?.classList.remove('hidden');
+        voiceRecordingStatus?.classList.add('flex');
+        if (recordVoiceBtn) recordVoiceBtn.title = 'Stop recording';
+        showToast('Listening... Speak now');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+
+        const prefix = initialTextBeforeRecording.trim();
+        if (prefix) {
+          messageInput.value = `${prefix} ${transcript}`;
+        } else {
+          messageInput.value = transcript;
+        }
+
+        messageInput.style.height = 'auto';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          showToast('Microphone access denied. Please allow microphone permissions.');
+        } else if (event.error === 'no-speech') {
+          showToast('No speech detected');
+        } else {
+          showToast('Voice error: ' + event.error);
+        }
+        stopRecording();
+      };
+
+      recognition.onend = () => {
+        if (isRecording) {
+          stopRecording();
+          if (messageInput.value.trim() && messageInput.value.trim() !== initialTextBeforeRecording.trim()) {
+            showToast('Voice converted to text');
+          }
+        }
+      };
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      recordVoiceBtn?.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-lg', 'shadow-rose-600/40');
+      recordVoiceBtn?.classList.add('bg-dark-base', 'text-gray-300', 'hover:bg-neutral-800', 'border-dark-border');
+      recordingBadge?.classList.add('hidden');
+      voiceRecordingStatus?.classList.add('hidden');
+      voiceRecordingStatus?.classList.remove('flex');
+      if (recordVoiceBtn) recordVoiceBtn.title = 'Record voice (speech to text)';
+    }
+
+    recordVoiceBtn?.addEventListener('click', () => {
+      if (!SpeechRecognition) {
+        showToast('Web Speech API is not supported in this browser');
+        return;
+      }
+
+      if (isRecording) {
+        stopRecording();
+        showToast('Voice recording stopped');
+      } else {
+        try {
+          recognition.start();
+        } catch (err) {
+          try {
+            recognition.stop();
+            setTimeout(() => recognition.start(), 100);
+          } catch (e) {
+            showToast('Could not start speech recognition');
+          }
+        }
+      }
+    });
+
+    // Image Utilities & Lightbox
+    const imageLightboxModal = document.getElementById('imageLightboxModal');
+    const lightboxImageEl = document.getElementById('lightboxImageEl');
+    const lightboxPromptText = document.getElementById('lightboxPromptText');
+    const lightboxDownloadBtn = document.getElementById('lightboxDownloadBtn');
+    const closeLightboxBtn = document.getElementById('closeLightboxBtn');
+
+    window.openLightbox = function(url, prompt) {
+      if (!lightboxImageEl || !imageLightboxModal) return;
+      lightboxImageEl.src = url;
+      if (lightboxPromptText) lightboxPromptText.textContent = prompt || 'AI Generated Image';
+      imageLightboxModal.classList.remove('hidden');
+    };
+
+    function closeLightbox() {
+      if (!imageLightboxModal) return;
+      imageLightboxModal.classList.add('hidden');
+      if (lightboxImageEl) lightboxImageEl.src = '';
+    }
+
+    closeLightboxBtn?.addEventListener('click', closeLightbox);
+    imageLightboxModal?.addEventListener('click', (e) => {
+      if (e.target === imageLightboxModal) closeLightbox();
+    });
+
+    lightboxDownloadBtn?.addEventListener('click', () => {
+      if (lightboxImageEl && lightboxImageEl.src) {
+        const p = lightboxPromptText?.textContent || 'ai-image';
+        const cleanSlug = p.slice(0, 24).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        downloadImageFile(lightboxImageEl.src, `ai-image-${cleanSlug}-${Date.now()}.jpg`);
+      }
+    });
+
+    function downloadImageFile(url, filename = 'ai-image.jpg') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Image downloaded');
+    }
+
+    // AI Image Generator Modal Logic
+    const imageGenModal = document.getElementById('imageGenModal');
+    const openImageModalBtn = document.getElementById('openImageModalBtn');
+    const quickImageBtn = document.getElementById('quickImageBtn');
+    const closeImageGenBtn = document.getElementById('closeImageGenBtn');
+    const closeImageGenBottomBtn = document.getElementById('closeImageGenBottomBtn');
+    const imagePromptInput = document.getElementById('imagePromptInput');
+    const presetChips = document.querySelectorAll('.preset-chip');
+    const ratioBtns = document.querySelectorAll('.ratio-btn');
+    const submitGenerateImageBtn = document.getElementById('submitGenerateImageBtn');
+    const generateBtnText = document.getElementById('generateBtnText');
+    const generateIcon = document.getElementById('generateIcon');
+
+    let selectedImageRatio = '1:1';
+
+    function openImageGeneratorModal() {
+      if (!imageGenModal) return;
+      imageGenModal.classList.remove('hidden');
+      if (imagePromptInput) {
+        imagePromptInput.focus();
+      }
+    }
+
+    function closeImageGeneratorModal() {
+      if (!imageGenModal) return;
+      imageGenModal.classList.add('hidden');
+    }
+
+    openImageModalBtn?.addEventListener('click', openImageGeneratorModal);
+    quickImageBtn?.addEventListener('click', openImageGeneratorModal);
+    closeImageGenBtn?.addEventListener('click', closeImageGeneratorModal);
+    closeImageGenBottomBtn?.addEventListener('click', closeImageGeneratorModal);
+    imageGenModal?.addEventListener('click', (e) => {
+      if (e.target === imageGenModal) closeImageGeneratorModal();
+    });
+
+    presetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const text = chip.getAttribute('data-text');
+        if (text && imagePromptInput) {
+          imagePromptInput.value = text;
+          imagePromptInput.focus();
+        }
+      });
+    });
+
+    ratioBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedImageRatio = btn.getAttribute('data-ratio') || '1:1';
+        ratioBtns.forEach(b => {
+          b.className = 'ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-dark-border bg-dark-surface text-gray-300 hover:text-white hover:border-neutral-600 flex flex-col items-center justify-center transition cursor-pointer';
+        });
+        btn.className = 'ratio-btn py-2 px-2 rounded-xl text-xs font-medium border border-purple-500 bg-purple-500/15 text-purple-300 flex flex-col items-center justify-center transition cursor-pointer shadow-sm';
+      });
+    });
+
+    async function executeImageGeneration(prompt, aspectRatio = '1:1') {
+      const cleanPrompt = (prompt || '').trim();
+      if (!cleanPrompt) {
+        showToast('Please enter an image prompt description');
+        return;
+      }
+
+      const sess = getCurrentSession();
+
+      // Add user prompt message to session
+      sess.messages.push({
+        role: 'user',
+        content: `Generate an image: "${cleanPrompt}" (${aspectRatio})`,
+        timestamp: Date.now()
+      });
+
+      if (sess.title === 'New Conversation' && sess.messages.length <= 3) {
+        sess.title = `Image: ${cleanPrompt.slice(0, 24)}`;
+      }
+
+      // Add temporary typing indicator
+      const typingMessage = {
+        role: 'assistant',
+        content: '🎨 Generating high-resolution image with AI neural engine...',
+        timestamp: Date.now(),
+        isTyping: true
+      };
+      sess.messages.push(typingMessage);
+      saveSessions();
+      renderSessions();
+      renderMessages({ autoScroll: true, smooth: true });
+
+      // Close modal if open
+      closeImageGeneratorModal();
+
+      try {
+        const resp = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: cleanPrompt,
+            aspectRatio
+          })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          throw new Error(data.error || ('HTTP ' + resp.status));
+        }
+
+        sess.messages = sess.messages.filter(m => !m.isTyping);
+        sess.messages.push({
+          role: 'assistant',
+          content: `Here is the AI generated image for "${cleanPrompt}"`,
+          type: 'image',
+          image: {
+            url: data.imageUrl,
+            prompt: cleanPrompt,
+            aspectRatio: aspectRatio,
+            provider: data.provider
+          },
+          timestamp: Date.now()
+        });
+
+        showToast('Image generated successfully');
+      } catch (err) {
+        sess.messages = sess.messages.filter(m => !m.isTyping);
+        sess.messages.push({
+          role: 'assistant',
+          content: '⚠️ Failed to generate image: ' + err.message,
+          timestamp: Date.now()
+        });
+        showToast('Image generation failed: ' + err.message);
+      } finally {
+        saveSessions();
+        renderSessions();
+        renderMessages({ autoScroll: false });
+        scrollToLatestMessage({ smooth: true });
+      }
+    }
+
+    submitGenerateImageBtn?.addEventListener('click', async () => {
+      const prompt = (imagePromptInput?.value || '').trim();
+      if (!prompt) {
+        showToast('Please enter an image prompt description');
+        imagePromptInput?.focus();
+        return;
+      }
+
+      submitGenerateImageBtn.disabled = true;
+      if (generateBtnText) generateBtnText.textContent = 'Generating...';
+      if (generateIcon) generateIcon.classList.add('animate-spin');
+
+      try {
+        await executeImageGeneration(prompt, selectedImageRatio);
+        if (imagePromptInput) imagePromptInput.value = '';
+      } finally {
+        submitGenerateImageBtn.disabled = false;
+        if (generateBtnText) generateBtnText.textContent = 'Generate & Add to Chat';
+        if (generateIcon) generateIcon.classList.remove('animate-spin');
+      }
+    });
+
+    // ==========================================
+    // 1. ATTACHMENT & FILE UPLOAD ENGINE
+    // ==========================================
+    const fileUploadInput = document.getElementById('fileUploadInput');
+    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const quickUploadBtn = document.getElementById('quickUploadBtn');
+    const attachmentTray = document.getElementById('attachmentTray');
+    const dragDropOverlay = document.getElementById('dragDropOverlay');
+    const chatInputContainer = document.getElementById('chatInputContainer');
+
+    let pendingAttachments = [];
+
+    uploadFileBtn?.addEventListener('click', () => fileUploadInput?.click());
+    quickUploadBtn?.addEventListener('click', () => fileUploadInput?.click());
+
+    fileUploadInput?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        processUploadedFiles(Array.from(e.target.files));
+        fileUploadInput.value = '';
+      }
+    });
+
+    // Drag and Drop listeners
+    let dragCounter = 0;
+    ['dragenter', 'dragover'].forEach(eventName => {
+      window.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      chatInputContainer?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter++;
+        dragDropOverlay?.classList.remove('hidden');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      window.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      chatInputContainer?.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          dragDropOverlay?.classList.add('hidden');
+        }
+      });
+    });
+
+    chatInputContainer?.addEventListener('drop', (e) => {
+      dragCounter = 0;
+      dragDropOverlay?.classList.add('hidden');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processUploadedFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    // Clipboard Paste Listener on messageInput
+    messageInput?.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file') {
+          const file = items[i].getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length > 0) {
+        processUploadedFiles(files);
+      }
+    });
+
+    function processUploadedFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      
+      fileList.forEach(file => {
+        const isImage = file.type.startsWith('image/');
+        const id = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+        if (isImage) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            pendingAttachments.push({
+              id,
+              type: 'image',
+              name: file.name,
+              mimeType: file.type || 'image/jpeg',
+              data: dataUrl
+            });
+            renderAttachmentTray();
+            showToast(`Attached image: ${file.name}`);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const textContent = e.target.result;
+            pendingAttachments.push({
+              id,
+              type: 'file',
+              name: file.name,
+              size: file.size,
+              text: typeof textContent === 'string' ? textContent : ''
+            });
+            renderAttachmentTray();
+            showToast(`Attached file: ${file.name}`);
+          };
+          reader.readAsText(file);
+        }
+      });
+    }
+
+    function renderAttachmentTray() {
+      if (!attachmentTray) return;
+      if (pendingAttachments.length === 0) {
+        attachmentTray.classList.add('hidden');
+        attachmentTray.innerHTML = '';
+        return;
+      }
+
+      attachmentTray.classList.remove('hidden');
+      attachmentTray.innerHTML = '';
+
+      pendingAttachments.forEach(att => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center space-x-2 bg-dark-base border border-dark-border rounded-xl p-1.5 pr-2.5 text-xs text-gray-200 shadow-sm transition group';
+
+        if (att.type === 'image') {
+          item.innerHTML = `
+            <div class="relative w-9 h-9 rounded-lg overflow-hidden bg-black flex-shrink-0 border border-dark-border">
+              <img src="${att.data}" alt="${escapeHtml(att.name)}" class="w-full h-full object-cover" />
+            </div>
+            <div class="truncate max-w-[120px] sm:max-w-[180px]">
+              <span class="block truncate font-medium text-[11px] text-white">${escapeHtml(att.name)}</span>
+              <span class="text-[9px] text-purple-400 font-mono">Image</span>
+            </div>
+            <button type="button" class="studio-edit-att-btn p-1 text-purple-400 hover:text-purple-300 hover:bg-purple-950/40 rounded transition" title="Open in NovaMind Image Studio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            </button>
+            <button type="button" class="remove-att-btn p-1 text-gray-400 hover:text-rose-400 rounded transition" title="Remove attachment">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          `;
+          item.querySelector('.studio-edit-att-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openImageStudioModal(att.data);
+          });
+        } else {
+          const sizeKb = Math.round((att.size || 0) / 1024);
+          item.innerHTML = `
+            <div class="w-9 h-9 rounded-lg bg-dark-surface border border-dark-border flex items-center justify-center text-brand-400 flex-shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div class="truncate max-w-[120px] sm:max-w-[180px]">
+              <span class="block truncate font-medium text-[11px] text-white">${escapeHtml(att.name)}</span>
+              <span class="text-[9px] text-gray-400 font-mono">${sizeKb} KB</span>
+            </div>
+            <button type="button" class="remove-att-btn p-1 text-gray-400 hover:text-rose-400 rounded transition" title="Remove attachment">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          `;
+        }
+
+        item.querySelector('.remove-att-btn')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          pendingAttachments = pendingAttachments.filter(a => a.id !== att.id);
+          renderAttachmentTray();
+        });
+
+        attachmentTray.appendChild(item);
+      });
+    }
+
+    // ==========================================
+    // 2. NOVAMIND IMAGE STUDIO & INPAINT ENGINE
+    // ==========================================
+    const imageStudioModal = document.getElementById('imageStudioModal');
+    const openImageStudioBtn = document.getElementById('openImageStudioBtn');
+    const closeStudioBtn = document.getElementById('closeStudioBtn');
+    const studioBrushModeBtn = document.getElementById('studioBrushModeBtn');
+    const studioEraserModeBtn = document.getElementById('studioEraserModeBtn');
+    const studioClearMaskBtn = document.getElementById('studioClearMaskBtn');
+    const studioBrushSize = document.getElementById('studioBrushSize');
+    const brushSizeVal = document.getElementById('brushSizeVal');
+    const studioCanvasContainer = document.getElementById('studioCanvasContainer');
+    const studioImageCanvas = document.getElementById('studioImageCanvas');
+    const studioMaskCanvas = document.getElementById('studioMaskCanvas');
+    const studioBrushCursor = document.getElementById('studioBrushCursor');
+    const studioEmptyState = document.getElementById('studioEmptyState');
+    const studioUploadInput = document.getElementById('studioUploadInput');
+    const loadSampleCarBtn = document.getElementById('loadSampleCarBtn');
+    const resetStudioImageBtn = document.getElementById('resetStudioImageBtn');
+
+    const tabReplaceCarBtn = document.getElementById('tabReplaceCarBtn');
+    const tabRemoveInfillBtn = document.getElementById('tabRemoveInfillBtn');
+    const sectionReplaceObject = document.getElementById('sectionReplaceObject');
+    const sectionRemoveInfill = document.getElementById('sectionRemoveInfill');
+    const replaceObjectPrompt = document.getElementById('replaceObjectPrompt');
+    const studioPresetChips = document.querySelectorAll('.studio-preset-chip');
+    const executeReplaceObjectBtn = document.getElementById('executeReplaceObjectBtn');
+    const replaceCarBtnText = document.getElementById('replaceCarBtnText');
+    const replaceCarIcon = document.getElementById('replaceCarIcon');
+    const executeRemoveInfillBtn = document.getElementById('executeRemoveInfillBtn');
+    const removeInfillBtnText = document.getElementById('removeInfillBtnText');
+    const removeInfillIcon = document.getElementById('removeInfillIcon');
+    const studioCompareToggleBtn = document.getElementById('studioCompareToggleBtn');
+    const compareToggleLabel = document.getElementById('compareToggleLabel');
+    const studioStatusLabel = document.getElementById('studioStatusLabel');
+    const studioDownloadBtn = document.getElementById('studioDownloadBtn');
+    const studioInsertChatBtn = document.getElementById('studioInsertChatBtn');
+
+    let imgCtx = studioImageCanvas?.getContext('2d');
+    let maskCtx = studioMaskCanvas?.getContext('2d');
+
+    let studioOriginalDataUrl = null;
+    let studioResultDataUrl = null;
+    let isShowingOriginal = false;
+    let studioCurrentMode = 'brush'; // 'brush' | 'eraser'
+    let currentBrushRadius = 30;
+    let isDrawingMask = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Handle studio presets
+    studioPresetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const p = chip.getAttribute('data-prompt');
+        if (p && replaceObjectPrompt) {
+          replaceObjectPrompt.value = p;
+          replaceObjectPrompt.focus();
+        }
+      });
+    });
+
+    // Tab switching
+    tabReplaceCarBtn?.addEventListener('click', () => {
+      tabReplaceCarBtn.className = 'py-2 px-2 text-xs font-semibold rounded-lg bg-purple-600 text-white transition flex items-center justify-center gap-1.5 cursor-pointer';
+      tabRemoveInfillBtn.className = 'py-2 px-2 text-xs font-medium rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 cursor-pointer';
+      sectionReplaceObject?.classList.remove('hidden');
+      sectionRemoveInfill?.classList.add('hidden');
+    });
+
+    tabRemoveInfillBtn?.addEventListener('click', () => {
+      tabRemoveInfillBtn.className = 'py-2 px-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white transition flex items-center justify-center gap-1.5 cursor-pointer';
+      tabReplaceCarBtn.className = 'py-2 px-2 text-xs font-medium rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 cursor-pointer';
+      sectionRemoveInfill?.classList.remove('hidden');
+      sectionReplaceObject?.classList.add('hidden');
+    });
+
+    // Brush vs Eraser tool toggles
+    studioBrushModeBtn?.addEventListener('click', () => {
+      studioCurrentMode = 'brush';
+      studioBrushModeBtn.className = 'px-2.5 py-1.5 rounded-lg bg-purple-600 text-white font-medium flex items-center gap-1.5 transition cursor-pointer';
+      studioEraserModeBtn.className = 'px-2.5 py-1.5 rounded-lg bg-dark-base hover:bg-neutral-800 text-gray-300 font-medium flex items-center gap-1.5 transition border border-dark-border cursor-pointer';
+      if (studioBrushCursor) {
+        studioBrushCursor.style.borderColor = '#c084fc';
+        studioBrushCursor.style.backgroundColor = 'rgba(168, 85, 247, 0.25)';
+      }
+    });
+
+    studioEraserModeBtn?.addEventListener('click', () => {
+      studioCurrentMode = 'eraser';
+      studioEraserModeBtn.className = 'px-2.5 py-1.5 rounded-lg bg-rose-600 text-white font-medium flex items-center gap-1.5 transition cursor-pointer';
+      studioBrushModeBtn.className = 'px-2.5 py-1.5 rounded-lg bg-dark-base hover:bg-neutral-800 text-gray-300 font-medium flex items-center gap-1.5 transition border border-dark-border cursor-pointer';
+      if (studioBrushCursor) {
+        studioBrushCursor.style.borderColor = '#fb7185';
+        studioBrushCursor.style.backgroundColor = 'rgba(244, 63, 94, 0.25)';
+      }
+    });
+
+    studioBrushSize?.addEventListener('input', (e) => {
+      currentBrushRadius = parseInt(e.target.value, 10) || 30;
+      if (brushSizeVal) brushSizeVal.textContent = currentBrushRadius + 'px';
+      if (studioBrushCursor) {
+        const sizePx = currentBrushRadius * 2;
+        studioBrushCursor.style.width = sizePx + 'px';
+        studioBrushCursor.style.height = sizePx + 'px';
+      }
+    });
+
+    studioClearMaskBtn?.addEventListener('click', () => {
+      clearStudioMask();
+      showToast('Mask cleared');
+    });
+
+    function clearStudioMask() {
+      if (!maskCtx || !studioMaskCanvas) return;
+      maskCtx.clearRect(0, 0, studioMaskCanvas.width, studioMaskCanvas.height);
+    }
+
+    function initStudioCanvases(w = 1024, h = 768) {
+      if (!studioImageCanvas || !studioMaskCanvas) return;
+      studioImageCanvas.width = w;
+      studioImageCanvas.height = h;
+      studioMaskCanvas.width = w;
+      studioMaskCanvas.height = h;
+      imgCtx = studioImageCanvas.getContext('2d');
+      maskCtx = studioMaskCanvas.getContext('2d');
+      clearStudioMask();
+    }
+
+    // High quality synthesized sample car photo on canvas
+    function renderSampleCarScene() {
+      initStudioCanvases(1024, 768);
+      if (!imgCtx) return;
+
+      const w = 1024;
+      const h = 768;
+
+      // 1. Sky Gradient (Sunset Dusk)
+      const skyGrad = imgCtx.createLinearGradient(0, 0, 0, h * 0.55);
+      skyGrad.addColorStop(0, '#1e1b4b');
+      skyGrad.addColorStop(0.35, '#581c87');
+      skyGrad.addColorStop(0.7, '#c2410c');
+      skyGrad.addColorStop(1, '#fde047');
+      imgCtx.fillStyle = skyGrad;
+      imgCtx.fillRect(0, 0, w, h * 0.55);
+
+      // Sun glow
+      const sunGrad = imgCtx.createRadialGradient(w * 0.5, h * 0.45, 10, w * 0.5, h * 0.45, 180);
+      sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+      sunGrad.addColorStop(0.5, 'rgba(249, 115, 22, 0.5)');
+      sunGrad.addColorStop(1, 'rgba(194, 65, 12, 0)');
+      imgCtx.fillStyle = sunGrad;
+      imgCtx.beginPath();
+      imgCtx.arc(w * 0.5, h * 0.45, 180, 0, Math.PI * 2);
+      imgCtx.fill();
+
+      // Mountains Silhouette
+      imgCtx.fillStyle = '#0f172a';
+      imgCtx.beginPath();
+      imgCtx.moveTo(0, h * 0.55);
+      imgCtx.lineTo(120, h * 0.38);
+      imgCtx.lineTo(260, h * 0.48);
+      imgCtx.lineTo(440, h * 0.32);
+      imgCtx.lineTo(580, h * 0.46);
+      imgCtx.lineTo(760, h * 0.35);
+      imgCtx.lineTo(920, h * 0.49);
+      imgCtx.lineTo(w, h * 0.42);
+      imgCtx.lineTo(w, h * 0.55);
+      imgCtx.closePath();
+      imgCtx.fill();
+
+      // 2. Asphalt Road & Highway
+      const roadGrad = imgCtx.createLinearGradient(0, h * 0.55, 0, h);
+      roadGrad.addColorStop(0, '#334155');
+      roadGrad.addColorStop(0.5, '#1e293b');
+      roadGrad.addColorStop(1, '#0f172a');
+      imgCtx.fillStyle = roadGrad;
+      imgCtx.fillRect(0, h * 0.55, w, h * 0.45);
+
+      // Road markings
+      imgCtx.fillStyle = 'rgba(250, 204, 21, 0.85)';
+      imgCtx.fillRect(w * 0.48, h * 0.6, 12, 50);
+      imgCtx.fillRect(w * 0.47, h * 0.72, 16, 70);
+      imgCtx.fillRect(w * 0.46, h * 0.86, 20, 90);
+
+      // 3. Sporty Red Supercar (Parked on Road)
+      // Car Shadow
+      const shadowGrad = imgCtx.createRadialGradient(w * 0.5, h * 0.77, 40, w * 0.5, h * 0.77, 340);
+      shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+      shadowGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.4)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      imgCtx.fillStyle = shadowGrad;
+      imgCtx.beginPath();
+      imgCtx.ellipse(w * 0.5, h * 0.77, 340, 45, 0, 0, Math.PI * 2);
+      imgCtx.fill();
+
+      // Lower Car Body
+      const carBodyGrad = imgCtx.createLinearGradient(0, h * 0.58, 0, h * 0.75);
+      carBodyGrad.addColorStop(0, '#dc2626');
+      carBodyGrad.addColorStop(0.4, '#ef4444');
+      carBodyGrad.addColorStop(0.8, '#b91c1c');
+      carBodyGrad.addColorStop(1, '#7f1d1d');
+      imgCtx.fillStyle = carBodyGrad;
+
+      imgCtx.beginPath();
+      imgCtx.moveTo(w * 0.22, h * 0.73);
+      imgCtx.lineTo(w * 0.25, h * 0.65);
+      imgCtx.lineTo(w * 0.36, h * 0.61);
+      imgCtx.lineTo(w * 0.44, h * 0.54);
+      imgCtx.lineTo(w * 0.62, h * 0.54);
+      imgCtx.lineTo(w * 0.73, h * 0.62);
+      imgCtx.lineTo(w * 0.82, h * 0.67);
+      imgCtx.lineTo(w * 0.81, h * 0.73);
+      imgCtx.closePath();
+      imgCtx.fill();
+
+      // Windshield & Roof Glass
+      const glassGrad = imgCtx.createLinearGradient(0, h * 0.54, 0, h * 0.62);
+      glassGrad.addColorStop(0, '#111827');
+      glassGrad.addColorStop(0.5, '#1e293b');
+      glassGrad.addColorStop(1, '#38bdf8');
+      imgCtx.fillStyle = glassGrad;
+      imgCtx.beginPath();
+      imgCtx.moveTo(w * 0.45, h * 0.55);
+      imgCtx.lineTo(w * 0.61, h * 0.55);
+      imgCtx.lineTo(w * 0.70, h * 0.62);
+      imgCtx.lineTo(w * 0.38, h * 0.62);
+      imgCtx.closePath();
+      imgCtx.fill();
+
+      // Wheels
+      function drawWheel(cx, cy, radius) {
+        imgCtx.fillStyle = '#09090b';
+        imgCtx.beginPath();
+        imgCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+        imgCtx.fill();
+        // Rim
+        imgCtx.fillStyle = '#a1a1aa';
+        imgCtx.beginPath();
+        imgCtx.arc(cx, cy, radius * 0.58, 0, Math.PI * 2);
+        imgCtx.fill();
+        imgCtx.fillStyle = '#27272a';
+        imgCtx.beginPath();
+        imgCtx.arc(cx, cy, radius * 0.25, 0, Math.PI * 2);
+        imgCtx.fill();
+      }
+      drawWheel(w * 0.31, h * 0.73, 44);
+      drawWheel(w * 0.72, h * 0.73, 44);
+
+      // Headlights & Tail accents
+      imgCtx.fillStyle = '#fef08a';
+      imgCtx.beginPath();
+      imgCtx.arc(w * 0.81, h * 0.67, 8, 0, Math.PI * 2);
+      imgCtx.fill();
+
+      studioOriginalDataUrl = studioImageCanvas.toDataURL('image/jpeg', 0.95);
+      studioResultDataUrl = null;
+      studioEmptyState?.classList.add('hidden');
+      if (compareToggleLabel) compareToggleLabel.textContent = 'Showing Original Photo';
+      if (studioStatusLabel) studioStatusLabel.textContent = 'Sample Car Loaded';
+
+      // Pre-fill a soft brush mask over the car automatically so user can immediately transform it!
+      clearStudioMask();
+      if (maskCtx) {
+        maskCtx.fillStyle = 'rgba(168, 85, 247, 0.65)';
+        maskCtx.beginPath();
+        maskCtx.ellipse(w * 0.52, h * 0.66, 320, 110, 0, 0, Math.PI * 2);
+        maskCtx.fill();
+      }
+    }
+
+    function loadStudioImage(dataUrl) {
+      if (!dataUrl) return;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        initStudioCanvases(img.naturalWidth || 1024, img.naturalHeight || 768);
+        imgCtx?.drawImage(img, 0, 0);
+        studioOriginalDataUrl = studioImageCanvas.toDataURL('image/jpeg', 0.95);
+        studioResultDataUrl = null;
+        studioEmptyState?.classList.add('hidden');
+        clearStudioMask();
+        if (compareToggleLabel) compareToggleLabel.textContent = 'Showing Original Photo';
+        if (studioStatusLabel) studioStatusLabel.textContent = 'Custom Image Ready';
+      };
+      img.src = dataUrl;
+    }
+
+    function openImageStudioModal(initialImageUrl = null) {
+      if (!imageStudioModal) return;
+      imageStudioModal.classList.remove('hidden');
+
+      if (initialImageUrl) {
+        loadStudioImage(initialImageUrl);
+      } else if (!studioOriginalDataUrl) {
+        renderSampleCarScene();
+      }
+    }
+
+    function closeImageStudioModal() {
+      if (!imageStudioModal) return;
+      imageStudioModal.classList.add('hidden');
+    }
+
+    openImageStudioBtn?.addEventListener('click', () => openImageStudioModal());
+    closeStudioBtn?.addEventListener('click', closeImageStudioModal);
+    loadSampleCarBtn?.addEventListener('click', () => {
+      renderSampleCarScene();
+      showToast('Loaded sample car photo with target mask ready!');
+    });
+
+    studioUploadInput?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          loadStudioImage(ev.target.result);
+          showToast(`Loaded ${file.name} into Studio`);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    resetStudioImageBtn?.addEventListener('click', () => {
+      if (studioOriginalDataUrl) {
+        loadStudioImage(studioOriginalDataUrl);
+        showToast('Reset to original photo');
+      }
+    });
+
+    // Coordinate mapping between viewport mouse/touch and high-res canvas
+    function getCanvasCoords(e) {
+      if (!studioMaskCanvas) return { x: 0, y: 0 };
+      const rect = studioMaskCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const scaleX = studioMaskCanvas.width / rect.width;
+      const scaleY = studioMaskCanvas.height / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY,
+        viewX: clientX - rect.left,
+        viewY: clientY - rect.top
+      };
+    }
+
+    // Canvas drawing handlers
+    studioMaskCanvas?.addEventListener('mousedown', (e) => {
+      isDrawingMask = true;
+      const coords = getCanvasCoords(e);
+      lastX = coords.x;
+      lastY = coords.y;
+      drawMaskStroke(coords.x, coords.y, false);
+    });
+
+    studioMaskCanvas?.addEventListener('mousemove', (e) => {
+      const coords = getCanvasCoords(e);
+      // Update cursor ring position
+      if (studioBrushCursor) {
+        studioBrushCursor.classList.remove('hidden');
+        studioBrushCursor.style.left = coords.viewX + 'px';
+        studioBrushCursor.style.top = coords.viewY + 'px';
+        const sizePx = currentBrushRadius * 2 * (studioMaskCanvas.getBoundingClientRect().width / studioMaskCanvas.width);
+        studioBrushCursor.style.width = Math.max(12, sizePx) + 'px';
+        studioBrushCursor.style.height = Math.max(12, sizePx) + 'px';
+      }
+
+      if (!isDrawingMask) return;
+      drawMaskStroke(coords.x, coords.y, true);
+      lastX = coords.x;
+      lastY = coords.y;
+    });
+
+    studioMaskCanvas?.addEventListener('mouseup', () => { isDrawingMask = false; });
+    studioMaskCanvas?.addEventListener('mouseleave', () => {
+      isDrawingMask = false;
+      studioBrushCursor?.classList.add('hidden');
+    });
+
+    // Touch support for mobile / tablets
+    studioMaskCanvas?.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isDrawingMask = true;
+      const coords = getCanvasCoords(e);
+      lastX = coords.x;
+      lastY = coords.y;
+      drawMaskStroke(coords.x, coords.y, false);
+    }, { passive: false });
+
+    studioMaskCanvas?.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDrawingMask) return;
+      const coords = getCanvasCoords(e);
+      drawMaskStroke(coords.x, coords.y, true);
+      lastX = coords.x;
+      lastY = coords.y;
+    }, { passive: false });
+
+    studioMaskCanvas?.addEventListener('touchend', () => { isDrawingMask = false; });
+
+    function drawMaskStroke(x, y, isMove) {
+      if (!maskCtx) return;
+      maskCtx.save();
+      if (studioCurrentMode === 'eraser') {
+        maskCtx.globalCompositeOperation = 'destination-out';
+      } else {
+        maskCtx.globalCompositeOperation = 'source-over';
+        maskCtx.fillStyle = 'rgba(168, 85, 247, 0.65)';
+        maskCtx.strokeStyle = 'rgba(168, 85, 247, 0.65)';
+      }
+
+      maskCtx.lineWidth = currentBrushRadius * 2;
+      maskCtx.lineCap = 'round';
+      maskCtx.lineJoin = 'round';
+
+      if (isMove) {
+        maskCtx.beginPath();
+        maskCtx.moveTo(lastX, lastY);
+        maskCtx.lineTo(x, y);
+        maskCtx.stroke();
+      } else {
+        maskCtx.beginPath();
+        maskCtx.arc(x, y, currentBrushRadius, 0, Math.PI * 2);
+        maskCtx.fill();
+      }
+      maskCtx.restore();
+    }
+
+    // Action 1: Transform & Replace Object (e.g. Car Replacement)
+    executeReplaceObjectBtn?.addEventListener('click', async () => {
+      const prompt = (replaceObjectPrompt?.value || '').trim() || 'A sleek aerodynamic red Ferrari sports car';
+      if (!studioImageCanvas) return;
+
+      executeReplaceObjectBtn.disabled = true;
+      if (replaceCarBtnText) replaceCarBtnText.textContent = 'Generating Replacement...';
+      if (replaceCarIcon) replaceCarIcon.classList.add('animate-spin');
+      if (studioStatusLabel) studioStatusLabel.textContent = 'Synthesizing Object...';
+
+      try {
+        const baseImage = studioImageCanvas.toDataURL('image/jpeg', 0.95);
+        const resp = await fetch('/api/edit-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'replace_object',
+            prompt,
+            image: baseImage
+          })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          throw new Error(data.error || 'Failed to replace object');
+        }
+
+        studioResultDataUrl = data.imageUrl;
+        isShowingOriginal = false;
+        loadStudioImage(studioResultDataUrl);
+        clearStudioMask();
+
+        if (compareToggleLabel) compareToggleLabel.textContent = 'Showing Result (Click for Original)';
+        if (studioStatusLabel) studioStatusLabel.textContent = 'Object Replaced Successfully!';
+        showToast('Object transformed & replaced successfully!');
+      } catch (err) {
+        showToast('Replacement error: ' + err.message);
+        if (studioStatusLabel) studioStatusLabel.textContent = 'Error: ' + err.message;
+      } finally {
+        executeReplaceObjectBtn.disabled = false;
+        if (replaceCarBtnText) replaceCarBtnText.textContent = 'Transform & Replace Object';
+        if (replaceCarIcon) replaceCarIcon.classList.remove('animate-spin');
+      }
+    });
+
+    // Action 2: Magic Erase & Infill Background
+    executeRemoveInfillBtn?.addEventListener('click', async () => {
+      if (!studioImageCanvas || !studioMaskCanvas) return;
+
+      executeRemoveInfillBtn.disabled = true;
+      if (removeInfillBtnText) removeInfillBtnText.textContent = 'Magic Infilling Scenery...';
+      if (removeInfillIcon) removeInfillIcon.classList.add('animate-spin');
+      if (studioStatusLabel) studioStatusLabel.textContent = 'Infilling background...';
+
+      try {
+        // High quality client-side Content-Aware Infill + Server-side Infill
+        const baseImage = studioImageCanvas.toDataURL('image/jpeg', 0.95);
+
+        // Perform boundary smooth diffuse infill directly onto canvas
+        const w = studioImageCanvas.width;
+        const h = studioImageCanvas.height;
+        const maskData = maskCtx.getImageData(0, 0, w, h);
+        const imgData = imgCtx.getImageData(0, 0, w, h);
+
+        // Diffuse surrounding road/background scenery into masked pixels
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const idx = (y * w + x) * 4;
+            // If masked pixel
+            if (maskData.data[idx + 3] > 20) {
+              // Sample surrounding scenery gradient
+              const sampleY = Math.min(h - 1, Math.max(0, y + (y > h * 0.6 ? 40 : -40)));
+              const sampleX = Math.min(w - 1, Math.max(0, x + (x < w * 0.5 ? -60 : 60)));
+              const sIdx = (sampleY * w + sampleX) * 4;
+              imgData.data[idx] = imgData.data[sIdx];
+              imgData.data[idx + 1] = imgData.data[sIdx + 1];
+              imgData.data[idx + 2] = imgData.data[sIdx + 2];
+            }
+          }
+        }
+        imgCtx.putImageData(imgData, 0, 0);
+
+        const resp = await fetch('/api/edit-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'remove_object',
+            prompt: 'empty pristine asphalt highway and scenic mountains background',
+            image: baseImage
+          })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok && data.imageUrl && !data.imageUrl.startsWith('https://picsum')) {
+          studioResultDataUrl = data.imageUrl;
+          loadStudioImage(studioResultDataUrl);
+        } else {
+          studioResultDataUrl = studioImageCanvas.toDataURL('image/jpeg', 0.95);
+        }
+
+        clearStudioMask();
+        isShowingOriginal = false;
+        if (compareToggleLabel) compareToggleLabel.textContent = 'Showing Result (Click for Original)';
+        if (studioStatusLabel) studioStatusLabel.textContent = 'Object Erased & Infilled!';
+        showToast('Object erased and background infilled seamlessly!');
+      } catch (err) {
+        showToast('Erase infill error: ' + err.message);
+        if (studioStatusLabel) studioStatusLabel.textContent = 'Error: ' + err.message;
+      } finally {
+        executeRemoveInfillBtn.disabled = false;
+        if (removeInfillBtnText) removeInfillBtnText.textContent = 'Magic Erase & Infill Background';
+        if (removeInfillIcon) removeInfillIcon.classList.remove('animate-spin');
+      }
+    });
+
+    // Before/After comparison toggle
+    studioCompareToggleBtn?.addEventListener('click', () => {
+      if (!studioOriginalDataUrl || !studioResultDataUrl) {
+        showToast('Edit an image first to compare Before & After');
+        return;
+      }
+      isShowingOriginal = !isShowingOriginal;
+      const targetUrl = isShowingOriginal ? studioOriginalDataUrl : studioResultDataUrl;
+      const img = new Image();
+      img.onload = () => {
+        imgCtx?.drawImage(img, 0, 0);
+      };
+      img.src = targetUrl;
+      if (compareToggleLabel) {
+        compareToggleLabel.textContent = isShowingOriginal ? 'Showing Original (Click for Result)' : 'Showing Result (Click for Original)';
+      }
+    });
+
+    // Save Image button
+    studioDownloadBtn?.addEventListener('click', () => {
+      const exportUrl = studioResultDataUrl || studioOriginalDataUrl || studioImageCanvas?.toDataURL('image/jpeg', 0.95);
+      if (exportUrl) {
+        downloadImageFile(exportUrl, `novamind-studio-edit-${Date.now()}.jpg`);
+      }
+    });
+
+    // Insert Image directly to Chat
+    studioInsertChatBtn?.addEventListener('click', () => {
+      const targetUrl = studioResultDataUrl || studioOriginalDataUrl || studioImageCanvas?.toDataURL('image/jpeg', 0.95);
+      if (!targetUrl) return;
+
+      const sess = getCurrentSession();
+      sess.messages.push({
+        role: 'assistant',
+        content: 'Transformed in NovaMind Image Studio:',
+        type: 'image',
+        image: {
+          url: targetUrl,
+          prompt: replaceObjectPrompt?.value || 'NovaMind Studio Inpaint Edit',
+          aspectRatio: '4:3',
+          provider: 'NovaMind Image Studio'
+        },
+        timestamp: Date.now()
+      });
+
+      saveSessions();
+      renderSessions();
+      renderMessages({ autoScroll: true, smooth: true });
+      closeImageStudioModal();
+      showToast('Inserted edited image into chat!');
+    });
+
+    // Delegated click listener for any "Edit in NovaMind Studio" buttons in chat
+    chatScrollArea?.addEventListener('click', (e) => {
+      const studioBtn = e.target.closest('.edit-in-studio-btn');
+      if (studioBtn) {
+        const url = studioBtn.getAttribute('data-url');
+        if (url) {
+          openImageStudioModal(url);
+          showToast('Loaded into NovaMind Image Studio');
+        }
+      }
+    });
+
+    // ==========================================
+    // 3. CHATGPT-STYLE SSE STREAMING & MESSAGING
+    // ==========================================
+    let activeAbortController = null;
+
+    function setGeneratingState(isGenerating) {
+      if (!sendBtn) return;
+      if (isGenerating) {
+        sendBtn.innerHTML = `
+          <span class="w-3.5 h-3.5 bg-white rounded-xs inline-block animate-pulse shadow"></span>
+        `;
+        sendBtn.title = 'Stop generating response';
+        sendBtn.setAttribute('aria-label', 'Stop generating response');
+        sendBtn.className = 'p-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition shadow-md shadow-rose-600/30 flex-shrink-0 active:scale-95 cursor-pointer flex items-center justify-center';
+      } else {
+        sendBtn.innerHTML = `
+          <svg id="sendIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
+        `;
+        sendBtn.title = 'Send message';
+        sendBtn.setAttribute('aria-label', 'Send message');
+        sendBtn.className = 'p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition shadow-md shadow-brand-600/30 flex-shrink-0 active:scale-95 cursor-pointer flex items-center justify-center';
+      }
+    }
 
     // Auto-resize textarea
     messageInput?.addEventListener('input', () => {
@@ -1161,15 +3077,52 @@
     messageInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        chatForm.dispatchEvent(new Event('submit'));
+        chatForm?.dispatchEvent(new Event('submit'));
       }
     });
 
-    // Send Message
     chatForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const content = messageInput.value.trim();
-      if (!content) return;
+
+      // If already streaming, clicking Stop cancels the generation
+      if (activeAbortController) {
+        activeAbortController.abort();
+        activeAbortController = null;
+        setGeneratingState(false);
+        showToast('Generation stopped');
+        return;
+      }
+
+      if (isRecording) {
+        stopRecording();
+      }
+
+      const content = messageInput?.value.trim() || '';
+      const attachmentsToSend = [...pendingAttachments];
+
+      if (!content && attachmentsToSend.length === 0) return;
+
+      // Check for image generation command or natural intent
+      const isImgCmd = content.startsWith('/image ') || content.startsWith('/draw ') || content.startsWith('/img ');
+      const isImgNatural = /^(generate|draw|create|render|make)\s+(an?\s+)?image\s+(of\s+)?/i.test(content);
+
+      if (isImgCmd || isImgNatural) {
+        let extractedPrompt = content;
+        if (isImgCmd) {
+          extractedPrompt = content.replace(/^\/(image|draw|img)\s+/i, '').trim();
+        } else if (isImgNatural) {
+          extractedPrompt = content.replace(/^(generate|draw|create|render|make)\s+(an?\s+)?image\s+(of\s+)?/i, '').trim();
+        }
+
+        if (extractedPrompt) {
+          if (messageInput) {
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+          }
+          await executeImageGeneration(extractedPrompt, '1:1');
+          return;
+        }
+      }
 
       const sess = getCurrentSession();
 
@@ -1177,101 +3130,160 @@
       sess.messages.push({
         role: 'user',
         content,
+        attachments: attachmentsToSend,
         timestamp: Date.now()
       });
 
       if (sess.title === 'New Conversation' && sess.messages.length <= 3) {
-        sess.title = content.slice(0, 30);
+        sess.title = (content || attachmentsToSend[0]?.name || 'Chat').slice(0, 30);
       }
 
-      messageInput.value = '';
-      messageInput.style.height = 'auto';
-      sendBtn.disabled = true;
+      // Reset input and attachments
+      if (messageInput) {
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+      }
+      pendingAttachments = [];
+      renderAttachmentTray();
 
-      // Temporary assistant typing indicator
-      const typingMessage = {
+      // ChatGPT-style placeholder assistant message
+      const assistantMsg = {
         role: 'assistant',
-        content: 'Thinking...',
-        timestamp: Date.now(),
-        isTyping: true
+        content: '',
+        isStreaming: true,
+        timestamp: Date.now()
       };
-      sess.messages.push(typingMessage);
+      sess.messages.push(assistantMsg);
+
       saveSessions();
       renderSessions();
-      renderMessages();
+      renderMessages({ autoScroll: true, smooth: true });
 
-      async function sendRequest(modelName, apiKeyVal) {
-        const payloadMessages = [
-          { role: 'system', content: systemPersona },
-          ...sess.messages
-            .filter(m => !m.isTyping)
-            .map(m => ({ role: m.role, content: m.content }))
-        ];
+      activeAbortController = new AbortController();
+      setGeneratingState(true);
 
+      const payloadMessages = [
+        { role: 'system', content: systemPersona },
+        ...sess.messages
+          .filter(m => m !== assistantMsg)
+          .map(m => ({
+            role: m.role,
+            content: m.content,
+            attachments: m.attachments
+          }))
+      ];
+
+      async function attemptStreaming(modelName, keyVal) {
         const resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: modelName,
             messages: payloadMessages,
-            apiKey: apiKeyVal || undefined
-          })
+            apiKey: keyVal || undefined,
+            stream: true
+          }),
+          signal: activeAbortController.signal
         });
 
-        const data = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-          throw new Error(data.error || ('HTTP error ' + resp.status));
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.error || ('HTTP ' + resp.status));
         }
-        return data;
+
+        const contentType = resp.headers.get('content-type') || '';
+        if (contentType.includes('text/event-stream') && resp.body) {
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let sseBuffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith('data: ')) {
+                const dataStr = trimmed.slice(6).trim();
+                try {
+                  const parsed = JSON.parse(dataStr);
+                  if (parsed.chunk) {
+                    assistantMsg.content += parsed.chunk;
+                    // Live real-time streaming update directly in the active message element
+                    const lastEl = chatScrollArea?.lastElementChild;
+                    if (lastEl) {
+                      const streamContentDiv = lastEl.querySelector('.chatgpt-stream-content');
+                      if (streamContentDiv) {
+                        streamContentDiv.innerHTML = formatMessageContent(assistantMsg.content);
+                      } else {
+                        renderMessages({ autoScroll: false });
+                      }
+                    } else {
+                      renderMessages({ autoScroll: false });
+                    }
+                    scrollToLatestMessage({ smooth: false });
+                  }
+                  if (parsed.done) {
+                    break;
+                  }
+                } catch (e) {}
+              }
+            }
+          }
+        } else {
+          // Fallback to standard JSON response
+          const data = await resp.json();
+          assistantMsg.content = data.reply || data.choices?.[0]?.message?.content || 'No response received.';
+        }
       }
 
       try {
-        let data;
         try {
-          data = await sendRequest(currentModel, openRouterKey);
+          await attemptStreaming(currentModel, openRouterKey);
         } catch (firstErr) {
+          if (activeAbortController?.signal.aborted) {
+            // User manually stopped generation
+            return;
+          }
           const errMsg = (firstErr.message || '').toLowerCase();
-          // Detect credit or token limits from third-party / OpenRouter
-          if (errMsg.includes('credit') || errMsg.includes('max_token') || errMsg.includes('afford') || errMsg.includes('402')) {
-            // Auto switch to free Gemini 3.6 Flash and retry seamlessly
+          if (errMsg.includes('credit') || errMsg.includes('afford') || errMsg.includes('402') || errMsg.includes('token')) {
             currentModel = 'google/gemini-3.6-flash';
             localStorage.setItem('current_model', currentModel);
             initModelDisplay();
             updateKeyBadge();
-            showToast('Switched to Free Gemini (zero credits required)');
-            data = await sendRequest('google/gemini-3.6-flash', undefined);
+            showToast('Switched to Free Gemini (zero credits needed)');
+            await attemptStreaming('google/gemini-3.6-flash', undefined);
           } else {
             throw firstErr;
           }
         }
-
-        const reply = data.reply || data.choices?.[0]?.message?.content || "No response received.";
-
-        sess.messages = sess.messages.filter(m => !m.isTyping);
-        sess.messages.push({
-          role: 'assistant',
-          content: reply,
-          timestamp: Date.now()
-        });
-
       } catch (err) {
-        sess.messages = sess.messages.filter(m => !m.isTyping);
-        sess.messages.push({
-          role: 'assistant',
-          content: '⚠️ Error: ' + err.message,
-          timestamp: Date.now()
-        });
+        if (activeAbortController?.signal.aborted) {
+          // Aborted by user
+          if (!assistantMsg.content) {
+            assistantMsg.content = 'Generation stopped by user.';
+          }
+        } else {
+          assistantMsg.content = '⚠️ Error: ' + err.message;
+        }
       } finally {
-        sendBtn.disabled = false;
+        assistantMsg.isStreaming = false;
+        activeAbortController = null;
+        setGeneratingState(false);
         saveSessions();
         renderSessions();
-        renderMessages();
+        renderMessages({ autoScroll: false });
+        scrollToLatestMessage({ smooth: true });
       }
     });
 
     // Initial render
     renderSessions();
-    renderMessages();
+    renderMessages({ autoScroll: true, smooth: false });
   </script>
 </body>
 </html>
